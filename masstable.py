@@ -11,7 +11,7 @@ from collections import Counter
 import sqlite3
 import urllib.request
 import datetime, dateutil
-import sys, os, itertools, re
+import sys, os, itertools, re, warnings
 
 __all__ = ['Molecule', 'MassTable',  # classes
            'mass_interference', 'get_masstable',  # methods
@@ -25,8 +25,10 @@ __all__ = ['Molecule', 'MassTable',  # classes
 _default_filename = 'masstable.db'
 _default_path = os.path.dirname(__file__)
 _default_location = os.path.join(_default_path, _default_filename)
-_mass_url = 'http://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl?all=all&ascii=ascii2&isotyp=some'
-# _url = 'http://ciaaw.org/atomic-masses.htm'
+# _mass_url = 'http://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl?all=all&ascii=ascii2&isotyp=some'
+_mass_url = 'http://ciaaw.org/atomic-masses.htm'
+_abundance_url = ' http://www.degruyter.com/table/j/pac.2016.88.issue-3/pac-2015-0503/pac-2015-0503.xml?id=j_pac-2015-0503_tab_001'
+
 
 # Precompile regexes
 # 
