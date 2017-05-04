@@ -675,7 +675,7 @@ def mass_interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1], chargesign=
                              'MRP',
                              'probability']]
 
-    return results.sort(columns='mass/charge')
+    return results.sort_values('mass/charge')
 
 
 def standard_ratios(atoms, formula_style='html'):
