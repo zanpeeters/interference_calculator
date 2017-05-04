@@ -29,6 +29,8 @@ _default_location = os.path.join(_default_path, _default_filename)
 _mass_url = 'http://ciaaw.org/atomic-masses.htm'
 _abundance_url = ' http://www.degruyter.com/table/j/pac.2016.88.issue-3/pac-2015-0503/pac-2015-0503.xml?id=j_pac-2015-0503_tab_001'
 
+# CODATA 2014, http://physics.nist.gov/cgi-bin/cuu/Value?me
+mass_electron = 0.0005485799090
 
 # Precompile regexes
 # 
@@ -637,6 +639,15 @@ def mass_interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1], chargesign=
 
     charge_str = [' [' + c + chargesign + ']' for c in charge_str]
     data['molecule'] += charge_str
+
+    # Correct mass for charge * electron mass
+    if chargesign == '+':
+        data['mass/charge'] -= data['charge'] * mass_electron
+    elif chargesign == '-':
+        data['mass/charge'] += data['charge'] * mass_electron
+    else:
+        raise ValueError('chargesign must be either "+" or "-".')
+
     data['mass/charge'] /= data['charge']
     if mz:
         data['mass/charge diff'] = data['mass/charge'] - mz
