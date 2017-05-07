@@ -17,6 +17,7 @@
 atomic number,element,element name,major isotope,isotope,atomic mass,mass,abundance,standard
 1,H,hydrogen,1H,1H,1,1.0078250322,0.99984426,VSMOW
 1,H,hydrogen,1H,2H,2,2.0141017781,0.00015574,VSMOW
+1,H,deuterium,1H,D,2,2.0141017781,0.00015574,VSMOW
 2,He,helium,4He,3He,3,3.01602932,1.343e-06,Air
 2,He,helium,4He,4He,4,4.0026032541,0.999998657,Air
 3,Li,lithium,7Li,6Li,6,6.015122887,0.07589,IRMM-016

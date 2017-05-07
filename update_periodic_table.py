@@ -136,6 +136,13 @@ mass['major isotope'] = major_isotope
 mass = mass[['atomic number', 'element', 'element name', 'major isotope',
              'isotope', 'atomic mass', 'mass', 'abundance', 'standard']]
 
+# Add alias for deuterium.
+d = mass.iloc[1].copy()
+d['isotope'] = 'D'
+d['element name'] = 'deuterium'
+mass = pd.concat([mass.iloc[0:3], mass.iloc[2:]])
+mass.iloc[2] = d.values
+
 with open(output, mode='wt', encoding='utf-8') as fh:
     fh.write(header.format(mass_url, abun_url))
     mass.to_csv(fh, index=False)
