@@ -61,6 +61,12 @@ mass['atomic mass'] = pd.to_numeric(mass['atomic mass'].str.strip('*'))
 # \xa0 is utf-8 encoded non-breaking space
 mass['mass'] = pd.to_numeric(mass['mass'].str.split('(').str[0].str.replace('\xa0', ''))
 
+# Add isotope column
+atomic_mass = mass['atomic mass'].values
+element = mass['element'].values
+isotope = [str(am) + el for am, el in zip(atomic_mass, element)]
+mass['isotope'] = isotope
+
 ### Abundance table
 
 if _debug:
@@ -126,8 +132,9 @@ for el in elements:
 
 mass['major isotope'] = major_isotope
 
+# Reorder columns
 mass = mass[['atomic number', 'element', 'element name', 'major isotope',
-             'atomic mass', 'mass', 'abundance', 'standard']]
+             'isotope', 'atomic mass', 'mass', 'abundance', 'standard']]
 
 with open(output, mode='wt', encoding='utf-8') as fh:
     fh.write(header.format(mass_url, abun_url))
