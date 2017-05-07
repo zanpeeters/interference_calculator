@@ -30,10 +30,16 @@ mass_url = 'http://ciaaw.org/atomic-masses.htm'
 abun_url = ' https://www.degruyter.com/table/j/pac.2016.88.issue-3/pac-2015-0503/pac-2015-0503.xml?id=j_pac-2015-0503_tab_001'
 output = 'periodic_table.csv'
 
+# Set to True to read from local files, useful for debugging.
+_debug = False
+
 ### Mass table
 
-req = requests.get(mass_url)
-mass = pd.read_html(req.text, encoding=req.encoding)[0]
+if _debug:
+    mass = pd.read_html('devel/mass_ciaaw.html', encoding='utf-8')[0]
+else:
+    req = requests.get(mass_url)
+    mass = pd.read_html(req.text, encoding=req.encoding)[0]
 mass = mass.drop(mass.index[-1])
 
 # HTML table has rowspans, read_html does not handle it correctly.
@@ -57,8 +63,11 @@ mass['mass'] = pd.to_numeric(mass['mass'].str.split('(').str[0].str.replace('\xa
 
 ### Abundance table
 
-req = requests.get(abun_url)
-abun = pd.read_html(req.text, encoding=req.encoding)[0]
+if _debug:
+    abun = pd.read_html('devel/abun_ciaaw.html', encoding='utf-8')[0]
+else:
+    req = requests.get(abun_url)
+    abun = pd.read_html(req.text, encoding=req.encoding)[0]
 
 abun.columns = ['atomic number', 'element', 'atomic mass', 'interval', 'annotation', 'abundance', 'reference', 'standard', 'interval2', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 abun = abun[['atomic number', 'element', 'atomic mass', 'abundance', 'standard']]
@@ -103,6 +112,22 @@ if not (mass['element'] == abun['element']).all():
 
 mass['abundance'] = abun['abundance']
 mass['standard'] = abun['standard']
+
+### Major isotope
+# For each element, determine the major isotope, the isotope with the highest abundance.
+elements = mass['element'].unique()
+major_isotope = []
+
+for el in elements:
+    el_slice = mass[mass['element'] == el]
+    major_mass = el_slice.sort_values('abundance', ascending=False).iloc[0].loc['atomic mass']
+    number_of_isotopes = el_slice.shape[0]
+    major_isotope.extend([str(major_mass) + el] * number_of_isotopes)
+
+mass['major isotope'] = major_isotope
+
+mass = mass[['atomic number', 'element', 'element name', 'major isotope',
+             'atomic mass', 'mass', 'abundance', 'standard']]
 
 with open(output, mode='wt', encoding='utf-8') as fh:
     fh.write(header.format(mass_url, abun_url))
