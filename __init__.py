@@ -13,6 +13,5 @@
          "interference_calculator.isotope_data.update()"
 """
 from __future__ import absolute_import
-from .isotope_data import *
 from .molecule import *
 from .interference_calculator import *
