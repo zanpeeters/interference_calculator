@@ -135,7 +135,7 @@ atomic number,element,element name,major isotope,isotope,atomic mass,mass,abunda
 42,Mo,molybdenum,98Mo,97Mo,97,96.906018,0.09582,NIST SRM 3134
 42,Mo,molybdenum,98Mo,98Mo,98,97.905405,0.24291999999999997,NIST SRM 3134
 42,Mo,molybdenum,98Mo,100Mo,100,99.907472,0.09744,NIST SRM 3134
-43,Tc,technetium,98Tc,98Tc,98,97.90720999999999,,
+43,Tc,technetium,98Tc,98Tc,98,97.90720999999999,0.0,
 44,Ru,ruthenium,102Ru,96Ru,96,95.90759,0.055420000000000004,
 44,Ru,ruthenium,102Ru,98Ru,98,97.90529000000001,0.018688,
 44,Ru,ruthenium,102Ru,99Ru,99,98.905934,0.127579,
@@ -214,7 +214,7 @@ atomic number,element,element name,major isotope,isotope,atomic mass,mass,abunda
 60,Nd,neodymium,142Nd,146Nd,146,145.91312,0.17189000000000002,
 60,Nd,neodymium,142Nd,148Nd,148,147.9169,0.05756,
 60,Nd,neodymium,142Nd,150Nd,150,149.9209,0.05637999999999999,
-61,Pm,promethium,145Pm,145Pm,145,144.91276000000002,,
+61,Pm,promethium,145Pm,145Pm,145,144.91276000000002,0.0,
 62,Sm,samarium,152Sm,144Sm,144,143.91201,0.030780000000000002,"Kaolinite, China"
 62,Sm,samarium,152Sm,147Sm,147,146.9149,0.15004,"Kaolinite, China"
 62,Sm,samarium,152Sm,148Sm,148,147.91483,0.11248,"Kaolinite, China"

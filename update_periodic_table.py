@@ -83,9 +83,9 @@ abun = abun.drop(abun[abun['element'].isin(['Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac'])
 abun.index = range(abun.shape[0])
 # No data for Tc and Pm, but want to keep.
 idx = abun[abun['element'] == 'Tc'].index
-abun.loc[idx] = [43, 'Tc', 98, 0, '']
+abun.loc[idx] = [43, 'Tc', 98, '0.0', '']
 idx = abun[abun['element'] == 'Pm'].index
-abun.loc[idx] = [61, 'Pm', 145, 0, '']
+abun.loc[idx] = [61, 'Pm', 145, '0.0', '']
 
 abun = abun.fillna(method='pad')
 abun['atomic number'] = pd.to_numeric(abun['atomic number'])
