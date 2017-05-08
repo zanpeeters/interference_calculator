@@ -74,11 +74,11 @@ class Molecule(object):
             Isotope notation is a separated list of elements, where each
             element is an isotope of the form NXxxn, with N the isotope
             number, Xxx is the element name, and n is the count
-            number. Any character except A-Z, 0-9, +, -, [, or ] may be
-            used to separate the elements. If no isotope number is specified,
-            the most common isotope is assumed (e.g. C -> 12C). A charge
-            may optionally be given as the last element. This form is
-            useful for inputting many unusual isotopes.
+            number (subscript). Any character except A-Z, 0-9, +, -, [, or ]
+            may be used to separate the elements. If no isotope number is
+            specified, the most common isotope is assumed (e.g. C -> 12C).
+            A charge may optionally be given as the last element. This form
+            is useful for inputting many unusual isotopes.
 
             Isotope notation: '12C2 15N O3 2-'
 
@@ -106,28 +106,32 @@ class Molecule(object):
         self.chargesign = ''
 
         self.elements = []
+        self.counts = []
         self.atomic_numbers = []
         self.atomic_masses = []
         self.masses = []
         self.abundances = []
 
-        self.parse(molecule)
+        self.parse()
         self.relative_abundance()
+        self.molecular_formula = self.formula()
 
     def __str__(self):
-        return self.input + ' --> ' + self.formula()
+        return self.input + ' --> ' + self.molecular_formula
 
-    def parse(self, molecule, _mass_table=None):
-        """ Parse input, retrieve elements. """
+    def parse(self):
+        """ Parse input, retrieve elements from periodic table,
+            calculate mass and abundance.
+        """
         # TODO: convert to using pyparsing, easier for future maintenance.
-        molecule = molecule.strip()
+        self.input = self.input.strip()
 
         # Determine notation
-        if (len(re.findall(_is_single_rx, molecule)) == 1 or
-            not re.match(_is_empirical_rx, molecule)):
-                units = re.findall(_isotope_notation_rx, molecule)
+        if (len(re.findall(_is_single_rx, self.input)) == 1 or
+            not re.match(_is_empirical_rx, self.input)):
+                units = re.findall(_isotope_notation_rx, self.input)
         else:
-            units = re.findall(_empirical_notation_rx, molecule)
+            units = re.findall(_empirical_notation_rx, self.input)
 
         # Check for charge and sign in input
         if '[' in units[-1][1]:
@@ -186,7 +190,7 @@ class Molecule(object):
 
         c = Counter(iunits)
         self.isotopes = sorted(c.keys())
-        self.count = [c[i] for i in self.isotopes]
+        self.counts = [c[i] for i in self.isotopes]
 
         for i in self.isotopes:
             isotope = periodic_table[periodic_table['isotope'] == i].iloc[0]
@@ -196,7 +200,7 @@ class Molecule(object):
             self.masses.append(isotope['mass'])
             self.abundances.append(isotope['abundance'])
 
-        for m, s in zip(self.masses, self.count):
+        for m, s in zip(self.masses, self.counts):
             self.mass += m * s
 
         # adjust mass for extra or missing electrons (charge)
@@ -207,7 +211,7 @@ class Molecule(object):
 
     def relative_abundance(self):
         """ Given a list of isotopes and a list of count numbers
-            calculate relative abundance for entire molecule.
+            (subscripts) calculate relative abundance for entire molecule.
         """
         # multiple isotopes e.g. 28Si (92.2%) 29Si (4.7%) 30Si (3.1%)
         # In this type of mass spectorscopy we only look at total mass of molecule,
@@ -239,7 +243,7 @@ class Molecule(object):
         # for 16O: pi = 0.9976 for 18O: pi = 0.002 (and 0.0004 for 17O)
 
         data = periodic_table[periodic_table['isotope'].isin(self.isotopes)].copy()
-        data['count'] = self.count
+        data['count'] = self.counts
 
         parents = data['major isotope'].value_counts().to_dict()
         abun_per_el = []
@@ -260,7 +264,7 @@ class Molecule(object):
         """ Sort elements from heavy to light, but keep same elements together. """
         raise NotImplementedError('not yet')
 
-    def formula(self, style='', HtoD=True, show_charge=True, template={}):
+    def formula(self, style='plain', HtoD=True, show_charge=True, template={}):
         """ Return the molecular formula as a string.
 
             The molecular formula can be formatted as html
@@ -269,8 +273,8 @@ class Molecule(object):
             plain text empirical formula (style='empirical'),
             or in a custom format (style='custom'), see below.
 
-            1H, 2H, 3H will be converted to H, D, and T; set
-            HtoD=False to output as 1H, 2H, and 3H instead.
+            1H and 2H will be converted to H and D; set
+            HtoD=False to output as 1H and 2H instead.
 
             Charge and sign will be automatically added, unless
             show_charge is set to False.
@@ -299,7 +303,7 @@ class Molecule(object):
 
         elem = self.elements
         amass = [str(u) for u in self.atomic_masses]
-        count = [str(c) if c > 1 else '' for c in self.count]
+        count = [str(c) if c > 1 else '' for c in self.counts]
 
         if HtoD:
             for n, x in enumerate(zip(amass, elem)):
@@ -310,9 +314,6 @@ class Molecule(object):
                     elif am == '2':
                         amass[n] = ''
                         elem[n] = 'D'
-                    elif am == '3':
-                        amass[n] = ''
-                        elem[n] = 'T'
 
         if style == 'html':
             templ = html_template
@@ -321,9 +322,13 @@ class Molecule(object):
         elif style == 'empirical':
             raise NotImplementedError('not yet')
         elif style == 'custom':
+            if not template:
+                raise ValueError('If you select style="custom", you must supply a custom template.')
             templ = template
-        else:
+        elif style in ('plain', 'isotope'):
             templ = isotope_template
+        else:
+            raise ValueError('style must be one of "html", "latex", "plain", "isotope", or "custom".')
 
         molecule = []
         for am, el, ct in zip(amass, elem, count):
