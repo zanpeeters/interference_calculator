@@ -11,7 +11,8 @@ from numpy import prod
 from scipy.misc import factorial
 import re
 
-__all__ = ['Molecule', 'templates', 'html_template', 'latex_template', 'isotope_template']
+__all__ = ['Molecule', 'mass_electron', 'periodic_table',
+           'templates', 'html_template', 'latex_template', 'isotope_template']
 
 periodic_table = pd.read_csv('periodic_table.csv', comment='#')
 

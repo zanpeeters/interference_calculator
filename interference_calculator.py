@@ -4,11 +4,9 @@
 
 import pandas as pd
 import itertools
-from molecule import Molecule, mass_electron
+from molecule import Molecule, mass_electron, periodic_table
 
 __all__ = ['interference', 'standard_ratio']
-
-periodic_table = pd.read_csv('periodic_table.csv', comment='#')
 
 def interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1],
                  chargesign='-', style='html'):
