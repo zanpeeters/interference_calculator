@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-""" GUI for mass spectrum program. """
+""" GUI for interference calculator. """
 
 try:
     from PyQt5 import QtCore, QtGui
@@ -12,9 +12,10 @@ except ImportError:
     except ImportError:
         raise ImportError('You need to have either PyQt4 or PyQt5 installed.')
 
-from pandas import DataFrame
+import pandas as pd
 import sys, re, platform
-import masstable
+from interference_calculator import interference, standard_ratio
+from molecule import Molecule, periodic_table
 
 _float_qrx = QtCore.QRegExp(r'^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$')
 _float_validator = QtGui.QRegExpValidator(_float_qrx)
@@ -24,9 +25,10 @@ _charges_rx = re.compile(r'(\d+)')
 class TableModel(QtCore.QAbstractTableModel):
     """ Take a pandas DataFrame and set data in a QTableModel (read-only). """
 
-    def __init__(self, data, parent=None):
-        QtCore.QAbstractTableModel.__init__(self, parent)
+    def __init__(self, data, table='interference', parent=None):
+        QtCore.QAbstractTableModel.__init__(self, parent=parent)
         self._data = data
+        self.table = table
 
     def rowCount(self, parent=None):
         return self._data.shape[0]
@@ -37,14 +39,26 @@ class TableModel(QtCore.QAbstractTableModel):
     def data(self, index, role=QtCore.Qt.DisplayRole):
         if index.isValid():
             if role == QtCore.Qt.DisplayRole:
-                if index.column() in (1, 2):
-                    return '{:.5f}'.format(self._data.iloc[index.row(), index.column()])
-                elif index.column() == 3:
-                    return '{:.1f}'.format(self._data.iloc[index.row(), index.column()])
-                elif index.column() == 4:
-                    return '{:.5g}'.format(self._data.iloc[index.row(), index.column()])
-                else:
-                    return '{}'.format(self._data.iloc[index.row(), index.column()])
+                if self.table == 'interference':
+                    if index.column() == 1:
+                        return '{:.6f}'.format(self._data.iloc[index.row(), index.column()])
+                    elif index.column() == 2:
+                        return '{:.7f}'.format(self._data.iloc[index.row(), index.column()])
+                    elif index.column() == 3:
+                        return '{:.2f}'.format(self._data.iloc[index.row(), index.column()])
+                    elif index.column() == 4:
+                        return '{:.5g}'.format(self._data.iloc[index.row(), index.column()])
+                    else:
+                        return '{}'.format(self._data.iloc[index.row(), index.column()])
+                elif self.table == 'std_ratios':
+                    if index.column() == 1:
+                        return '{:.6f}'.format(self._data.iloc[index.row(), index.column()])
+                    elif index.column() in (2, 3):
+                        return '{:.5g}'.format(self._data.iloc[index.row(), index.column()])
+                    elif index.column() == 4:
+                        return '{:.2f}'.format(self._data.iloc[index.row(), index.column()])
+                    else:
+                        return '{}'.format(self._data.iloc[index.row(), index.column()])
             elif role == QtCore.Qt.TextAlignmentRole:
                 if index.column() == 0:
                     return QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter
@@ -123,39 +137,8 @@ class HTMLDelegate(widgets.QStyledItemDelegate):
         return QtCore.QSize(textbox.idealWidth(), textbox.size().height())
 
 
-class LogSpinBox(widgets.QDoubleSpinBox):
-    """ Like QDoubleSpinBox but steps by powers of 10 
-
-        Default minimum and maximum are 10^-99 and 10^+99,
-        although these limits are arbitrary. The real limits
-        are sys.float_info.min and sys.float_info.max.
-
-        The number of decimals is set to 99, so that the
-        entered value is stored without rounding, while
-        displaying at a convenient length.
-    """
-    def __init__(self, parent=None):
-        super().__init__(parent=parent)
-        self.setMaximum(1.0e99)
-        self.setMinimum(1.0e-99)
-        self.setDecimals(99)
-        self.setValue(1.0)
-
-    def stepBy(self, steps):
-        """ Step by powers of 10. """
-        self.setValue(self.value() * 10 ** steps)
-
-    def validate(self, inputs, pos):
-        """ Validate input based on float regex. """
-        return _float_validator.validate(inputs, pos)
-
-    def textFromValue(self, value):
-        """ Override QDoubleSpinBox.textFromValue to display floats. """
-        return '{:n}'.format(value)
-
-
 class MainWindow(widgets.QMainWindow):
-    """ Main window for masstable ui. """
+    """ Main window for interference calculator ui. """
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Mass interference calculator')
@@ -165,7 +148,7 @@ class MainWindow(widgets.QMainWindow):
 
 
 class MainWidget(widgets.QWidget):
-    """ Central widget class for masstable ui. """
+    """ Central widget class for interference calculator ui. """
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.atoms = []
@@ -173,8 +156,6 @@ class MainWidget(widgets.QWidget):
         self.mz = 0.0
         self.mzrange = 0.3
         self.maxsize = 5
-        self.minabundance = 1.0e-8
-        self.has_minabundance = False
 
         # Inputs
         self.atoms_input = widgets.QLineEdit(parent=self)
@@ -188,10 +169,11 @@ class MainWidget(widgets.QWidget):
         self.charges_input = widgets.QLineEdit(' '.join([str(c) for c in self.charges]), parent=self)
 
         self.chargesign_input = widgets.QComboBox(parent=self)
-        self.chargesign_input.addItem('+', '+')
         self.chargesign_input.addItem('-', '-')
+        self.chargesign_input.addItem('o', 'o')
+        self.chargesign_input.addItem('+', '+')
 
-        self.mz_label = widgets.QLabel('target mass/charge', parent=self)
+        self.mz_label = widgets.QLabel('target mass/charge or molecule', parent=self)
         self.mz_input = widgets.QLineEdit(parent=self)
         self.mz_input.setPlaceholderText('number or formula: 26.0 or 12C 14N')
 
@@ -201,16 +183,9 @@ class MainWidget(widgets.QWidget):
         self.mzrange_input.setSingleStep(0.1)
         self.mzrange_input.setDecimals(3)
 
-        self.minabundance_label = widgets.QLabel('missing abundance value', parent=self)
-        self.minabundance_input = LogSpinBox(parent=self)
-        self.minabundance_input.setValue(self.minabundance)
-        self.minabundance_input.setEnabled(self.has_minabundance)
-        self.minabundance_select = widgets.QCheckBox()
-        self.minabundance_select.setChecked(self.has_minabundance)
-
         # Action button
         self.interference_button = widgets.QPushButton('calculate interference', parent=self)
-        self.isotopes_button = widgets.QPushButton('natural abundance', parent=self)
+        self.standard_ratio_button = widgets.QPushButton('standard ratio', parent=self)
 
         # Table output
         self.table_output = TableView(html_cols=0)
@@ -259,16 +234,13 @@ class MainWidget(widgets.QWidget):
         self.param_bottom_layout.addWidget(self.chargesign_input, 1, 1)
         self.param_bottom_layout.addWidget(self.maxsize_label, 0, 2)
         self.param_bottom_layout.addWidget(self.maxsize_input, 1, 2)
-        self.param_bottom_layout.addWidget(self.minabundance_label, 0, 3)
-        self.param_bottom_layout.addWidget(self.minabundance_input, 1, 3)
-        self.param_bottom_layout.addWidget(self.minabundance_select, 1, 4)
 
         self.parameters_group_layout.addLayout(self.param_top_layout)
         self.parameters_group_layout.addLayout(self.param_bottom_layout)
 
         self.button_layout = widgets.QHBoxLayout()
         self.button_layout.addWidget(self.interference_button)
-        self.button_layout.addWidget(self.isotopes_button)
+        self.button_layout.addWidget(self.standard_ratio_button)
 
         self.output_layout = widgets.QHBoxLayout()
         self.output_layout.addWidget(self.table_output)
@@ -282,9 +254,8 @@ class MainWidget(widgets.QWidget):
         self.setLayout(self.layout)
 
         # Connect
-        self.interference_button.clicked.connect(self.calculate)
-        self.isotopes_button.clicked.connect(self.show_isotopes)
-        self.minabundance_select.stateChanged.connect(self.toggle_minabundance)
+        self.interference_button.clicked.connect(self.calculate_interference)
+        self.standard_ratio_button.clicked.connect(self.show_standard_ratio)
         self.atoms_input.editingFinished.connect(self.check_atoms_input)
         self.charges_input.editingFinished.connect(self.check_charges_input)
         self.mz_input.editingFinished.connect(self.check_mz_input)
@@ -295,17 +266,15 @@ class MainWidget(widgets.QWidget):
         self.setTabOrder(self.mzrange_input, self.charges_input)
         self.setTabOrder(self.charges_input, self.chargesign_input)
         self.setTabOrder(self.chargesign_input, self.maxsize_input)
-        self.setTabOrder(self.maxsize_input, self.minabundance_input)
-        self.setTabOrder(self.minabundance_input, self.minabundance_select)
-        self.setTabOrder(self.minabundance_select, self.interference_button)
-        self.setTabOrder(self.interference_button, self.isotopes_button)
-        self.setTabOrder(self.isotopes_button, self.table_output)
+        self.setTabOrder(self.maxsize_input, self.interference_button)
+        self.setTabOrder(self.interference_button, self.standard_ratio_button)
+        self.setTabOrder(self.standard_ratio_button, self.table_output)
 
         # Set tooltip help
         self.atoms_input.setToolTip('''<html><head/><body>
             <p><b>List of atoms to include.</b></p>
             <p>Give the composition of the sample. List all atoms separated by space.
-            All isotopes for each atom are included automatically.</p>
+            All isotopes for each element are included automatically.</p>
             </body></html>''')
         self.charges_input.setToolTip('''<html><head/><body>
             <p><b>List of charges to apply.</b></p>
@@ -316,8 +285,9 @@ class MainWidget(widgets.QWidget):
             </body></html>''')
         self.chargesign_input.setToolTip('''<html><head/><body>
             <p><b>Select sign of ionic charge.</b></p>
-            <p>This sign is only used for display in the molecular formula, the value
-            mass-to-charge ratio does not change with this selection.</p>
+            <p>The mass of the resulting ion depends on the charge sign and is corrected
+            for the mass of the extra electron (&ndash;), missing electron (+), or not
+            corrected (o).</p>
             </body></html>''')
         self.mz_input.setToolTip('''<html><head/><body>
             <p><b>Target mass-to-charge ratio.</b></p>
@@ -337,32 +307,16 @@ class MainWidget(widgets.QWidget):
             possible combinations of <i>n</i> atoms in a molecule grows exponentially
             with <i>n</i>, so keep this number low to avoid obscenely large lists.</p>
             </body></html>''')
-        self.minabundance_input.setToolTip('''<html><head/><body>
-            <p><b>Missing abundance replacement value.</b></p>
-            <p>The mass table downloaded from the NIST website has missing abundance
-            values for some isotopes, possibly because the abundance is too low to measure
-            accurately.</p>
-            <p>Use this input field to give a (low) replacement value for the abundance.
-            With a replacement value, a probability can be calculated even though the actual
-            value may be unrealistic. This way, two molecules with unknown abundances can
-            still be compared, relative to eachother.</p>
-            <p>Use the tick box to disable this input field. When this input field is
-            disabled, NaN (Not a Number) will be used and the probability of the molecule
-            will not be calculated (NaN is respected).</p>
-            </body></html>''')
-        self.minabundance_select.setToolTip('''<html><head/><body>
-            <p><b>Enable/disable missing abundance replacement.</b></p>
-            <p>With this option selected, the given missing abundance replacement value
-            will be used. Unselected, the missing abundance input field will be disabled
-            and NaN (Not a Number) will be displayed. All molecules that include one or
-            more isotopes with an unknown abundance will have NaN probability.</p>
-            </body></html>''')
         self.interference_button.setToolTip('''<html><head/><body>
-            <p>Calculate mass interference.</p>
+            <p>(enter)</p>
             </body></html>''')
-        self.isotopes_button.setToolTip('''<html><head/><body>
-            <p>Show natural abundances for isotopes.</p>
-            </body></html>''')
+        if sys.platform == 'darwin':
+            modifier = '&#8984;'
+        else:
+            modifier = 'ctrl'
+        self.standard_ratio_button.setToolTip('''<html><head/><body>
+            <p>({}-enter)</p>
+            </body></html>'''.format(modifier))
 
     @QtCore.pyqtSlot()
     def check_atoms_input(self):
@@ -375,8 +329,8 @@ class MainWidget(widgets.QWidget):
             self.statusbar.showMessage(msg, msecs=5000)
             return False
         for a in atoms:
-            if not (a in masstable.elements or a in masstable.isotopes):
-                msg = '{} is not an element or isotope.'.format(a)
+            if not (periodic_table['element'] == a).any(): 
+                msg = '{} is not an element or missing from the internal periodic table.'.format(a)
                 self.statusbar.showMessage(msg, msecs=5000)
                 return False
         self.atoms = atoms
@@ -416,11 +370,11 @@ class MainWidget(widgets.QWidget):
                 mz = float(self.mz_input.text())
             except ValueError:
                 try:
-                    m = masstable.Molecule(self.mz_input.text())
-                    ch = m.charge
-                    if ch == 0:
-                        ch = 1
-                    mz = m.mass/ch
+                    m = Molecule(self.mz_input.text())
+                    if m.charge == 0:
+                        mz = m.mass
+                    else:
+                        mz = m.mass/m.charge
                 except:
                     msg = 'Enter mz as a number or as a molecular formula.'
                     self.statusbar.showMessage(msg, msecs=5000)
@@ -428,60 +382,52 @@ class MainWidget(widgets.QWidget):
         self.mz = mz
         return True
 
-    @QtCore.pyqtSlot()
-    def toggle_minabundance(self):
-        """ Dis/enable minabundance on toggle checkbox. """
-        self.has_minabundance = bool(self.minabundance_select.checkState())
-        self.minabundance_input.setEnabled(self.has_minabundance)
-
     def keyPressEvent(self, event):
-        """ Link enter/return to calculate button. """
-        if (event.key() == QtCore.Qt.Key_Enter 
-            or event.key() == QtCore.Qt.Key_Return):
-                self.calculate()
+        """ Link enter/return to calculate button,
+            cmd/ctrl-enter/return to standard ratio.
+        """
+        key = event.key()
+        mod = event.modifiers()
+        if (key == QtCore.Qt.Key_Enter or key == QtCore.Qt.Key_Return):
+            if mod == QtCore.Qt.ControlModifier:
+                self.show_standard_ratio()
+            else:
+                self.calculate_interference()
         else:
             super().keyPressEvent(event)
 
     @QtCore.pyqtSlot()
-    def calculate(self):
+    def calculate_interference(self):
         """ Take input, calculate mass spectrum, display in table. """
         if not (self.check_atoms_input() and
                 self.check_charges_input() and
                 self.check_mz_input()):
             return
 
-        if self.has_minabundance:
-            self.minabundance = self.minabundance_input.value()
-        else:
-            self.minabundance = None
         self.maxsize = self.maxsize_input.value()
         self.chargesign = self.chargesign_input.currentText()
         self.mzrange = self.mzrange_input.value()
 
-        ms = masstable.mass_interference(self.atoms, self.mz, mzrange=self.mzrange, 
-            maxsize=self.maxsize, charge=self.charges, chargesign=self.chargesign,
-            minabundance=self.minabundance)
-        ms.pop('charge')
-        ms.columns = ['molecule', 'mass/charge', 'Δmass/charge', 'mz/Δmz (MRP)', 'probability']
-        ms.index = range(1, ms.shape[0] + 1)
+        data = interference(self.atoms, self.mz, mzrange=self.mzrange, 
+            maxsize=self.maxsize, charge=self.charges, chargesign=self.chargesign)
+        data.pop('charge')
+        data.columns = ['molecule', 'mass/charge', 'Δmass/charge', 'mz/Δmz (MRP)', 'probability']
+        data.index = range(1, data.shape[0] + 1)
 
-        model = TableModel(ms)
+        model = TableModel(data, table='interference')
         self.table_output.setModel(model)
         self.table_output.horizontalHeader().setSectionResizeMode(widgets.QHeaderView.Stretch)
 
     @QtCore.pyqtSlot()
-    def show_isotopes(self):
+    def show_standard_ratio(self):
         """ Show the standard ratios. """
         if not self.check_atoms_input():
             return
 
-        d = masstable.standard_ratios(self.atoms)
-        # recreate DataFrame to get index (isotopes) as a column.
-        ratios = DataFrame([d.index, d['isotope_mass'], d['abundance'], d['inverse']]).T
-        ratios.columns = ['isotope', 'mass', 'abundance', 'inverse']
-        ratios.index = range(1, ratios.shape[0] + 1)
+        data = standard_ratio(self.atoms)
+        data.index = range(1, data.shape[0] + 1)
 
-        model = TableModel(ratios)
+        model = TableModel(data, table='std_ratios')
         self.table_output.setModel(model)
         self.table_output.horizontalHeader().setSectionResizeMode(widgets.QHeaderView.Stretch)
 
