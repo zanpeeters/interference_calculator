@@ -23,7 +23,9 @@ def interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1],
 
         Charge is usually 1, irrespective of sign. Give charge = [1, 2, 3]
         to also include higher charged ions. Masses are adjusted for missing
-        electrons (+ charge) or extra electrons (- charge).
+        electrons (+ charge), extra electrons (- charge), or not adjusted
+        (o charge, lower-case letter O). Setting charge=0 has the same
+        effect as setting chargesign='o'.
 
         Molecular formulas are formatted in style (default is 'html').
         See Molecule() for more options.
@@ -36,6 +38,11 @@ def interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1],
         'probability', which gives the combinatorial probability of encoutering this
         combination of isotopes, given the composition of the sample.
     """
+    if isinstance(charge, int):
+        charge = [charge]
+    if chargesign not in ('+', '-', 'o', 'O', '0'):
+        raise ValueError('chargesign must be either "+", "-", or "o".')
+
     picked_atoms = periodic_table[periodic_table['element'].isin(atoms)]
 
     # Mass-to-charge can be given as either a number, or as a molecule (string).
@@ -45,10 +52,9 @@ def interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1],
             mz = float(mz)
         except ValueError:
             m = Molecule(mz)
-            ch = m.charge
-            if ch == 0:
-                ch = 1
-            mz = m.mass / ch
+            mz = m.mass
+            if m.charge > 0:
+                mz /= m.charge
 
     # Create a list with all possible combinations up to maxsize atoms.
     # Create same list for masses, combos are created in same order.
@@ -62,7 +68,7 @@ def interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1],
 
     masses = pd.DataFrame(mass_combos).sum(axis=1)
 
-    # Using Molecule() to convert atom list to molecular formula and to
+    # Using Molecule() to convert atom list to molecular formula and
     # calculate abundance is too slow for long list.
     # For 5 atoms, max size 5, 8567 combos: 80 s. Do for trimmed list later.
     molecules = [' '.join(m) for m in isotope_combos]
@@ -70,38 +76,38 @@ def interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1],
     data = pd.DataFrame({'molecule': molecules,
                          'mass/charge': masses})
 
-    data_w_charge = []
-    for ch in charge:
-        if ch == 1:
-            charge_str = ' [{}]'.format(chargesign)
-        else:
-            charge_str = ' [{}{}]'.format(ch, chargesign)
-        d = data.copy()
-        d['charge'] = ch
-        d['mass/charge'] /= ch
-        d['molecule'] += charge_str
-        data_w_charge.append(d)
-    data = pd.concat(data_w_charge)
-
-    # Correct mass for extra/missing electrons.
-    # Only once, mass already divided by charge.
-    if chargesign == '+':
-        data['mass/charge'] -= mass_electron
-    elif chargesign == '-':
-        data['mass/charge'] += mass_electron
+    # ignore charge(s) for sign o
+    if chargesign in ('o', 'O', '0'):
+        data['charge'] = 0
     else:
-        raise ValueError('chargesign must be either "+" or "-".')
+        data_w_charge = []
+        for ch in charge:
+            d = data.copy()
+            d['charge'] = ch
+            if ch == 0:
+                data_w_charge.append(d)
+                continue
+            elif ch == 1:
+                charge_str = ' {}'.format(chargesign)
+            else:
+                charge_str = ' {}{}'.format(ch, chargesign)
+            d['molecule'] += charge_str
+            d['mass/charge'] /= ch
+            if chargesign == '+':
+                d['mass/charge'] -= mass_electron
+            else:
+                d['mass/charge'] += mass_electron
+            data_w_charge.append(d)
+        data = pd.concat(data_w_charge)
 
     if mz:
+        data = data.loc[(data['mass/charge'] >= mz - mzrange)
+                      & (data['mass/charge'] <= mz + mzrange)]
         data['mass/charge diff'] = data['mass/charge'] - mz
         data['MRP'] = mz/data['mass/charge diff'].abs()
     else:
         data['mass/charge diff'] = 0.0
         data['MRP'] = 0.0
-
-    if mz:
-        data = data.loc[(data['mass/charge'] >= mz - mzrange)
-                      & (data['mass/charge'] <= mz + mzrange)]
 
     molec = []
     abun = []

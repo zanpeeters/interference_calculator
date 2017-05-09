@@ -144,15 +144,18 @@ class Molecule(object):
             charge = 0
             chsgn = ''
 
+        if chsgn in ('+', '-', 'o', 'O', '0', ''):
+            self.chargesign = chsgn
+        else:
+            raise FormatError('Unknown chargesign: {}'.format(chsgn))
+
         if charge == '':
-            self.charge = 0
+            if chsgn:
+                self.charge = 1
+            else:
+                self.charge = 0
         else:
             self.charge = int(charge)
-
-        if '+' in chsgn:
-            self.chargesign = '+'
-        else:
-            self.chargesign = '-'
 
         # Fix certain shorthand notations
         iunits = []
