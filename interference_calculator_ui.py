@@ -9,6 +9,7 @@ except ImportError:
     try:
         from PyQt4 import QtCore, QtGui
         from PyQt4 import QtGui as widgets
+        widgets.QStyleOptionViewItem = widgets.QStyleOptionViewItemV4
     except ImportError:
         raise ImportError('You need to have either PyQt4 or PyQt5 installed.')
 
@@ -106,11 +107,7 @@ class HTMLDelegate(widgets.QStyledItemDelegate):
         options = widgets.QStyleOptionViewItem(option)
         self.initStyleOption(options, index)
 
-        if options.widget:
-            style = options.widget.style()
-        else:
-            style = widgets.QApplication.style()
-
+        style = widgets.QApplication.style()
         textbox = QtGui.QTextDocument()
         textbox.setHtml(options.text)
         textbox.setTextWidth(options.rect.width())
@@ -416,7 +413,12 @@ class MainWidget(widgets.QWidget):
 
         model = TableModel(data, table='interference')
         self.table_output.setModel(model)
-        self.table_output.horizontalHeader().setSectionResizeMode(widgets.QHeaderView.Stretch)
+        try:
+            # PyQt5
+            self.table_output.horizontalHeader().setSectionResizeMode(widgets.QHeaderView.Stretch)
+        except AttributeError:
+            # PyQt4
+            self.table_output.horizontalHeader().setResizeMode(widgets.QHeaderView.Stretch)
 
     @QtCore.pyqtSlot()
     def show_standard_ratio(self):
@@ -429,7 +431,12 @@ class MainWidget(widgets.QWidget):
 
         model = TableModel(data, table='std_ratios')
         self.table_output.setModel(model)
-        self.table_output.horizontalHeader().setSectionResizeMode(widgets.QHeaderView.Stretch)
+        try:
+            # PyQt5
+            self.table_output.horizontalHeader().setSectionResizeMode(widgets.QHeaderView.Stretch)
+        except AttributeError:
+            # PyQt4
+            self.table_output.horizontalHeader().setResizeMode(widgets.QHeaderView.Stretch)
 
 
 def run():
