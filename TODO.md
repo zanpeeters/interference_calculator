@@ -4,6 +4,5 @@
 - sorting molecules, sorting atoms in molecule
 - icon
 - license (BSD?)
-- check pyqt4, win
 - create win exe
 - publish on github -> pip
