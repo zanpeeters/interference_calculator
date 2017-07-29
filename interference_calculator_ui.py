@@ -13,7 +13,6 @@ except ImportError:
     except ImportError:
         raise ImportError('You need to have either PyQt4 or PyQt5 installed.')
 
-import pandas as pd
 import sys, re, platform
 from interference_calculator import interference, standard_ratio
 from molecule import Molecule, periodic_table
