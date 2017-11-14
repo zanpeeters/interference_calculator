@@ -40,22 +40,37 @@ class TableModel(QtCore.QAbstractTableModel):
         if index.isValid():
             if role == QtCore.Qt.DisplayRole:
                 if self.table == 'interference':
-                    if index.column() == 1:
+                    if index.column() == 0:
+                        # formula
+                        m = Molecule(self._data.iloc[index.row(), index.column()])
+                        return m.formula(style='html')
+                    elif index.column() == 1:
+                        # mass
                         return '{:.6f}'.format(self._data.iloc[index.row(), index.column()])
                     elif index.column() == 2:
+                        # mass difference
                         return '{:.7f}'.format(self._data.iloc[index.row(), index.column()])
                     elif index.column() == 3:
+                        # MRP
                         return '{:.2f}'.format(self._data.iloc[index.row(), index.column()])
                     elif index.column() == 4:
+                        # probability
                         return '{:.5g}'.format(self._data.iloc[index.row(), index.column()])
                     else:
                         return '{}'.format(self._data.iloc[index.row(), index.column()])
                 elif self.table == 'std_ratios':
-                    if index.column() == 1:
+                    if index.column() == 0:
+                        # formula
+                        m = Molecule(self._data.iloc[index.row(), index.column()])
+                        return m.formula(style='html')
+                    elif index.column() == 1:
+                        # mass
                         return '{:.6f}'.format(self._data.iloc[index.row(), index.column()])
                     elif index.column() in (2, 3):
+                        # rel. abundance and ratio
                         return '{:.5g}'.format(self._data.iloc[index.row(), index.column()])
                     elif index.column() == 4:
+                        # inverse ratio
                         return '{:.2f}'.format(self._data.iloc[index.row(), index.column()])
                     else:
                         return '{}'.format(self._data.iloc[index.row(), index.column()])
@@ -64,6 +79,8 @@ class TableModel(QtCore.QAbstractTableModel):
                     return QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter
                 else:
                     return QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter
+            elif role == QtCore.Qt.EditRole:
+                return self._data.iloc[index.row(), index.column()]
 
     def headerData(self, rowcol, orientation, role):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
@@ -90,6 +107,41 @@ class TableView(widgets.QTableView):
             if isinstance(html_cols, int):
                 html_cols = [html_cols]
             [self.setItemDelegateForColumn(c, HTMLDelegate(parent=parent)) for c in html_cols]
+
+    def contextMenuEvent(self, event):
+        menu = widgets.QMenu(self)
+        copy_action = menu.addAction('Copy')
+        copy_action.setShortcut('Ctrl+C')
+        select_all_action = menu.addAction('Select All')
+        select_all_action.setShortcut('Ctrl+A')
+        action = menu.exec_(self.mapToGlobal(event.pos()))
+
+        if action == copy_action:
+            self.copy()
+        elif action == select_all_action:
+            self.selectAll()
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        mod = event.modifiers()
+        if (mod == QtCore.Qt.ControlModifier and key == QtCore.Qt.Key_C):
+            self.copy()
+        elif (mod == QtCore.Qt.ControlModifier and key == QtCore.Qt.Key_A):
+            self.selectAll()
+
+    def copy(self):
+        pasteboard = widgets.QApplication.clipboard()
+        selected = self.selectedIndexes()
+        output = ''
+        prev_col = 0
+        for s in selected:
+            if s.column() < prev_col:
+                output += '\n'
+            elif output:
+                output += '    '
+            output += str(s.data(role=QtCore.Qt.EditRole))
+            prev_col = s.column()
+        pasteboard.setText(output)
 
 
 class HTMLDelegate(widgets.QStyledItemDelegate):
@@ -405,7 +457,7 @@ class MainWidget(widgets.QWidget):
         self.mzrange = self.mzrange_input.value()
 
         data = interference(self.atoms, self.mz, mzrange=self.mzrange, 
-            maxsize=self.maxsize, charge=self.charges, chargesign=self.chargesign)
+            maxsize=self.maxsize, charge=self.charges, chargesign=self.chargesign, style='plain')
         data.pop('charge')
         data.columns = ['molecule', 'mass/charge', 'Δmass/charge', 'mz/Δmz (MRP)', 'probability']
         data.index = range(1, data.shape[0] + 1)
