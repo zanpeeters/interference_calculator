@@ -134,14 +134,6 @@ class TableView(widgets.QTableView):
         elif action == select_all_action:
             self.selectAll()
 
-    def keyPressEvent(self, event):
-        key = event.key()
-        mod = event.modifiers()
-        if (mod == QtCore.Qt.ControlModifier and key == QtCore.Qt.Key_C):
-            self.copy()
-        elif (mod == QtCore.Qt.ControlModifier and key == QtCore.Qt.Key_A):
-            self.selectAll()
-
 
 class HTMLDelegate(widgets.QStyledItemDelegate):
     """ Display HTML in a table cell. """
@@ -431,7 +423,9 @@ class MainWidget(widgets.QWidget):
 
     def keyPressEvent(self, event):
         """ Link enter/return to calculate button,
-            cmd/ctrl-enter/return to standard ratio.
+            cmd/ctrl-enter/return to standard ratio,
+            cmd/ctrl-c to table data copy,
+            cmd/ctrl-a to select all in table.
         """
         key = event.key()
         mod = event.modifiers()
@@ -440,6 +434,10 @@ class MainWidget(widgets.QWidget):
                 self.show_standard_ratio()
             else:
                 self.calculate_interference()
+        elif (key == QtCore.Qt.Key_C and mod == QtCore.Qt.ControlModifier):
+                self.table_output.copy()
+        elif (key == QtCore.Qt.Key_A and mod == QtCore.Qt.ControlModifier):
+                self.table_output.selectAll()
         else:
             super().keyPressEvent(event)
 
