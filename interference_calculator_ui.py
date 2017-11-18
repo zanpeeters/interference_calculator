@@ -14,6 +14,7 @@ except ImportError:
         raise ImportError('You need to have either PyQt4 or PyQt5 installed.')
 
 import sys, re, platform
+import numpy as np
 from interference_calculator import interference, standard_ratio
 from molecule import Molecule, periodic_table
 
@@ -97,6 +98,15 @@ class TableModel(QtCore.QAbstractTableModel):
         self.beginResetModel()
         self.endResetModel()
 
+    def copy(self, selection):
+        mask = np.zeros(self._data.shape, dtype=bool)
+        for s in selection:
+            mask[s.row(), s.column()] = True
+        output = self._data.where(mask)
+        output = output.dropna(how='all', axis=(0,1))
+        pasteboard = widgets.QApplication.clipboard()
+        pasteboard.setText(output.to_csv(index=False))
+
 
 class TableView(widgets.QTableView):
     """ Implement a QTableView which can display HTML in arbitrary columns """
@@ -107,6 +117,9 @@ class TableView(widgets.QTableView):
             if isinstance(html_cols, int):
                 html_cols = [html_cols]
             [self.setItemDelegateForColumn(c, HTMLDelegate(parent=parent)) for c in html_cols]
+
+    def copy(self):
+        self.model().copy(self.selectedIndexes())
 
     def contextMenuEvent(self, event):
         menu = widgets.QMenu(self)
@@ -128,20 +141,6 @@ class TableView(widgets.QTableView):
             self.copy()
         elif (mod == QtCore.Qt.ControlModifier and key == QtCore.Qt.Key_A):
             self.selectAll()
-
-    def copy(self):
-        pasteboard = widgets.QApplication.clipboard()
-        selected = self.selectedIndexes()
-        output = ''
-        prev_col = 0
-        for s in selected:
-            if s.column() < prev_col:
-                output += '\n'
-            elif output:
-                output += '    '
-            output += str(s.data(role=QtCore.Qt.EditRole))
-            prev_col = s.column()
-        pasteboard.setText(output)
 
 
 class HTMLDelegate(widgets.QStyledItemDelegate):
