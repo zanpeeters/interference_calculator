@@ -37,9 +37,10 @@ _charged = pp.oneOf('+ -')
 # molecule    ::= one or more units + [charge]
 #
 
-_in_delimiter = pp.CharsNotIn(pp.alphanums + '+-').setParseAction(pp.replaceWith(' '))
+_in_delimiter = pp.CharsNotIn(pp.alphanums + '+-').setParseAction(pp.replaceWith(','))
+_in_comma = pp.Optional(pp.Suppress(','))
 _in_unit = pp.OneOrMore(pp.Group(
-                _opt_int('atomic_mass') + _element('element') + _opt_int('count')
+                _opt_int('atomic_mass') + _element('element') + _opt_int('count') + _in_comma
               ))
 _in_charge = pp.Optional(pp.Group(
                 _neutral('charge_sign') |
