@@ -61,7 +61,7 @@ _mn_atomic_mass = pp.Optional(pp.Combine(
                     pp.Suppress('[') + pp.Word(pp.nums) + pp.Suppress(']')
                   ))
 _mn_unit = pp.OneOrMore(pp.Group(
-                _mf_atomic_mass('atomic_mass') + _element('element') + _opt_int('count')
+                _mn_atomic_mass('atomic_mass') + _element('element') + _opt_int('count')
               ))
 _mn_charge = pp.Optional(
                 pp.Suppress('[') + (
