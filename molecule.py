@@ -42,11 +42,11 @@ _in_comma = pp.Optional(pp.Suppress(','))
 _in_unit = pp.OneOrMore(pp.Group(
                 _opt_int('atomic_mass') + _element('element') + _opt_int('count') + _in_comma
               ))
-_in_charge = pp.Optional(pp.Group(
+_in_charge = pp.Optional(
                 _neutral('charge_sign') |
                 _opt_int('charge_count') + _charged('charge_sign')
-             ))
-_in_molecule = _in_unit('units') + _in_charge('charge')
+             )
+_in_molecule = _in_unit('units') + _in_charge
 
 ### molecular notation in Backus-Naur form (-ish)
 # example: C2H5COOCH[15]NH3[+]
@@ -70,8 +70,7 @@ _mn_charge = pp.Optional(
                     _opt_int('charge_count') + _charged('charge_sign')
                 ) + pp.Suppress(']')
             )
-_mn_molecule = _mn_unit('units') + _mn_charge('charge')
-
+_mn_molecule = _mn_unit('units') + _mn_charge
 
 templates = ['html_template', 'latex_template', 'isotope_template']
 
@@ -220,12 +219,11 @@ class Molecule(object):
             self.mass += m * c
 
         # Find charge and sign
-        if molec.charge:
-            self.chargesign = molec.charge[0].charge_sign
-            if self.chargesign in ('o', '0', ''):
-                self.charge = 0
-            else:
-                self.charge = int(molec.charge[0].get('charge_count', 1))
+        self.chargesign = molec.get('charge_sign', '')
+        if self.chargesign in ('o', '0', ''):
+            self.charge = 0
+        else:
+            self.charge = int(molec.get('charge_count', 1))
 
         # Adjust mass for extra or missing electrons (charge)
         if self.chargesign == '+':
