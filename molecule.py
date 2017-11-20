@@ -231,11 +231,12 @@ class Molecule(object):
             self.mass += m * c
 
         # Find charge and sign
-        self.chargesign = molec.charge[0].charge_sign
-        if self.chargesign in ('o', '0', ''):
-            self.charge = 0
-        else:
-            self.charge = int(molec.charge[0].get('charge_count', 1))
+        if molec.charge:
+            self.chargesign = molec.charge[0].charge_sign
+            if self.chargesign in ('o', '0', ''):
+                self.charge = 0
+            else:
+                self.charge = int(molec.charge[0].get('charge_count', 1))
 
         # Adjust mass for extra or missing electrons (charge)
         if self.chargesign == '+':
