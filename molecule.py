@@ -72,7 +72,8 @@ _mn_charge = pp.Optional(
             )
 _mn_molecule = _mn_unit('units') + _mn_charge
 
-templates = ['html_template', 'latex_template', 'isotope_template']
+# Templates for output, add new templates to list.
+templates = ['html_template', 'latex_template', 'isotope_template', 'molecular_template']
 
 html_template = {
     'atomic_mass': '<sup>{}</sup>',
@@ -99,6 +100,15 @@ isotope_template = {
     'charge': '{}',
     'minorjoin': '',
     'majorjoin': ' '
+}
+
+molecular_template = {
+    'atomic_mass': '[{}]',
+    'element': '{}',
+    'count': '{}',
+    'charge': '[{}]',
+    'minorjoin': '',
+    'majorjoin': ''
 }
 
 class Molecule(object):
@@ -287,9 +297,10 @@ class Molecule(object):
 
             The molecular formula can be formatted as html
             (style='html'), LaTeX (style='latex'), plain
-            text isotope notation (style='isotope', default),
-            plain text empirical formula (style='empirical'),
-            or in a custom format (style='custom'), see below.
+            text isotope notation (style='isotope', or style=
+            'plain', default), molecular formula notation
+            (style='molecular'), or in a custom format
+            (style='custom'), see below.
 
             1H and 2H will be converted to H and D; set
             HtoD=False to output as 1H and 2H instead.
@@ -336,14 +347,14 @@ class Molecule(object):
             templ = html_template
         elif style == 'latex':
             templ = latex_template
-        elif style == 'empirical':
-            raise NotImplementedError('not yet')
+        elif style == 'molecular':
+            templ = molecular_template
+        elif style in ('plain', 'isotope'):
+            templ = isotope_template
         elif style == 'custom':
             if not template:
                 raise ValueError('If you select style="custom", you must supply a custom template.')
             templ = template
-        elif style in ('plain', 'isotope'):
-            templ = isotope_template
         else:
             raise ValueError('style must be one of "html", "latex", "plain", "isotope", or "custom".')
 
