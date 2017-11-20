@@ -72,10 +72,6 @@ _mn_charge = pp.Optional(
             )
 _mn_molecule = _mn_unit('units') + _mn_charge('charge')
 
-# How to determine which input notation is used?
-# If it contains a separation marker (space or anything not letter, numbers, or []+-),
-# then it is isotope notation, otherwise molecular notation.
-_mn_allowed_chars = ~pp.CharsNotIn(pp.alphanums + '[]+-')
 
 templates = ['html_template', 'latex_template', 'isotope_template']
 
@@ -166,14 +162,6 @@ class Molecule(object):
     def __str__(self):
         return self.input + ' --> ' + self.molecular_formula
 
-    def is_molecular_formula(self):
-        """ Parses a string to determine if it is in the molecular notation.
-
-            Returns True if the input string is in the molecular formula
-            notation, False otherwise.
-        """
-        return _mn_allowed_chars.matches(self.input)
-
     def parse(self):
         """ Parse input, retrieve elements from periodic table,
             calculate mass and abundance.
@@ -181,9 +169,9 @@ class Molecule(object):
         self.input = self.input.strip()
 
         # Parse input string into pyparsing.ParseResult objects
-        if self.is_molecular_formula():
+        try:
             molec = _mn_molecule.parseString(self.input, parseAll=True)
-        else:
+        except pp.ParseException:
             delim_string = _in_delimiter.transformString(self.input)
             molec = _in_molecule.parseString(delim_string, parseAll=True)
 
