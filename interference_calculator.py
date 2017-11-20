@@ -136,13 +136,13 @@ def standard_ratio(atoms, style='html'):
     pretty_isotopes = []
     for i in data['isotope'].values:
         m = Molecule(i)
-        pretty_isotopes.append(m.formula(style=style, show_charge=False))
+        pretty_isotopes.append(m.formula(style=style, show_charge=False, all_isotopes=True))
     data['isotope'] = pretty_isotopes
 
     return data[['isotope', 'mass', 'abundance', 'ratio', 'inverse ratio', 'standard']]
 
 if __name__ == '__main__':
-    print('Possible interferences for MgO given as sample consisting of H, C, O, N, and Si:')
+    print('Possible interferences for MgO given a sample consisting of H, C, O, N, and Si:')
     print(interference(['H', 'C', 'O', 'N', 'Si'], 'MgO'))
-    print('Standard ratios of C and S:')
-    print(standard_ratio(['C', 'S']))
+    print('Standard ratios of C, S, and H:')
+    print(standard_ratio(['C', 'S', 'H']))

@@ -75,7 +75,7 @@ else:
     req = requests.get(abun_url)
     abun = pd.read_html(req.text, encoding=req.encoding)[0]
 
-abun.columns = ['atomic number', 'element', 'atomic mass', 'interval', 'annotation', 'abundance', 'reference', 'standard', 'interval2', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+abun.columns = ['atomic number', 'element', 'atomic mass', 'interval', 'annotation', 'abundance', 'reference', 'standard', 'interval2']
 abun = abun[['atomic number', 'element', 'atomic mass', 'abundance', 'standard']]
 
 # No data for Po, At, Rn, Fr, Ra, Ac, also missing from mass table.
@@ -135,13 +135,6 @@ mass['major isotope'] = major_isotope
 # Reorder columns
 mass = mass[['atomic number', 'element', 'element name', 'major isotope',
              'isotope', 'atomic mass', 'mass', 'abundance', 'standard']]
-
-# Add alias for deuterium.
-d = mass.iloc[1].copy()
-d['isotope'] = 'D'
-d['element name'] = 'deuterium'
-mass = pd.concat([mass.iloc[0:3], mass.iloc[2:]])
-mass.iloc[2] = d.values
 
 with open(output, mode='wt', encoding='utf-8') as fh:
     fh.write(header.format(mass_url, abun_url))
