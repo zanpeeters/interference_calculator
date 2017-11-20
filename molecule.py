@@ -6,10 +6,10 @@
     formatting using simple templates.
 """
 import pandas as pd
-from collections import Counter
+import pyparsing as pp
+
 from numpy import prod
 from scipy.misc import factorial
-import re
 
 __all__ = ['Molecule', 'mass_electron', 'periodic_table',
            'templates', 'html_template', 'latex_template', 'isotope_template']
@@ -19,19 +19,67 @@ periodic_table = pd.read_csv('periodic_table.csv', comment='#')
 # CODATA 2014, http://physics.nist.gov/cgi-bin/cuu/Value?me
 mass_electron = 0.0005485799090
 
-# How to determine the input notation?
+# parser elements used by all forms
+_opt_int = pp.Optional(pp.Word(pp.nums))
+_element = pp.Combine(pp.Word(pp.alphas.upper(), exact=1) + pp.Optional(pp.Word(pp.alphas.lower(), max=2)))
+_neutral = pp.oneOf('o 0')
+_charged = pp.oneOf('+ -')
+
+### isotope notation in Backus-Naur form (-ish)
+# example: 12C2 18O -
+#
+# element     ::= capital + [lowercase letter] + [lowercase letter]
+# atomic mass ::= integer
+# count       ::= integer
+# delimiter   ::= one or more character not A-Z, a-z, 0-9, +, -
+# unit        ::= [atomic mass] + element + [multiplier] + [delimiter]
+# charge      ::= ("o"|"0") | ([integer] + ("+"|"-"))
+# molecule    ::= one or more units + [charge]
+#
+
+_in_delimiter = pp.CharsNotIn(pp.alphanums + '+-').setParseAction(pp.replaceWith(' '))
+_in_unit = pp.OneOrMore(pp.Group(
+                _opt_int('atomic_mass') + _element('element') + _opt_int('count')
+              ))
+_in_charge = pp.Optional(pp.Group(
+                _neutral('charge_sign') |
+                _opt_int('charge_count') + _charged('charge_sign')
+             ))
+_in_molecule = _in_unit('units') + _in_charge('charge')
+
+### molecular notation in Backus-Naur form (-ish)
+# example: C2H5COOCH[15]NH3[+]
+#
+# element     ::= capital + [lowercase letter] + [lowercase letter]
+# atomic mass ::= "[" + integer + "]"
+# count       ::= integer
+# charge      ::= "[" + (("o"|"0") | ([integer] + ("+"|"-"))) + "]"
+# unit        ::= [atomic mass] + element + [multiplier]
+# molecule    ::= one or more units + [charge]
+
+_mn_atomic_mass = pp.Optional(pp.Combine(
+                    pp.Suppress('[') + pp.Word(pp.nums) + pp.Suppress(']')
+                  ))
+_mn_unit = pp.OneOrMore(pp.Group(
+                _mf_atomic_mass('atomic_mass') + _element('element') + _opt_int('count')
+              ))
+_mn_charge = pp.Optional(
+                pp.Suppress('[') + (
+                    _neutral('charge_sign') |
+                    _opt_int('charge_count') + _charged('charge_sign')
+                ) + pp.Suppress(']')
+            )
+_mn_molecule = _mn_unit('units') + _mn_charge('charge')
+
+# How to determine which input notation is used?
 # If it contains a separation marker (space or anything not letter, numbers, or []+-),
-# then it is isotope notation, otherwise empirical.
-# However, treat a single element (one capital in string) as isotope notation.
-_isotope_notation_rx = re.compile(r'(\d*)([A-Z][a-z]{0,2}|[+-])(\d*)')
-_empirical_notation_rx = re.compile(r'(?:\[(\d*)\])?([A-Z][a-z]{0,2}|\[\d*[+-]\])(\d*)')
-_is_empirical_rx = re.compile(r'^[A-Za-z\d\[\]+-]+$')
-_is_single_rx = re.compile(r'[A-Z]')
+# then it is isotope notation, otherwise molecular notation.
+_mn_allowed_chars = ~pp.CharsNotIn(pp.alphanums + '[]+-')
 
 templates = ['html_template', 'latex_template', 'isotope_template']
 
 html_template = {
-    'isotope': '<sup>{}</sup>',
+    'atomic_mass': '<sup>{}</sup>',
     'element': '{}',
     'count': '<sub>{}</sub>',
     'charge': '<sup>{}</sup>',
@@ -40,7 +88,7 @@ html_template = {
 }
 
 latex_template = {
-    'isotope': '{{}}^{{{}}}',
+    'atomic_mass': '{{}}^{{{}}}',
     'element': '{{{}}}',
     'count': '_{{{}}}',
     'charge': '{{}}^{{{}}}',
@@ -49,7 +97,7 @@ latex_template = {
 }
 
 isotope_template = {
-    'isotope': '{}',
+    'atomic_mass': '{}',
     'element': '{}',
     'count': '{}',
     'charge': '{}',
@@ -57,40 +105,36 @@ isotope_template = {
     'majorjoin': ' '
 }
 
-class FormatError(Exception):
-    """ Raised when an error in the formatting of molecular formula is detected. """
-    pass
-
-
 class Molecule(object):
     """ Represents a molecule or molecular ion. """
+
     def __init__(self, molecule):
         """ Parses a chemical formula string and returns an object that
             holds properties of the molecule or molecular ion.
 
             Two forms of input string are supported: isotope notation and
-            empirical formula notation. These names and notations are used
+            molecular formula notation. These names and notations are used
             for input and output.
 
-            Isotope notation is a separated list of elements, where each
-            element is an isotope of the form NXxxn, with N the isotope
-            number, Xxx is the element name, and n is the count
-            number (subscript). Any character except A-Z, 0-9, +, -, [, or ]
-            may be used to separate the elements. If no isotope number is
-            specified, the most common isotope is assumed (e.g. C -> 12C).
-            A charge may optionally be given as the last element. This form
-            is useful for inputting many unusual isotopes.
+            Isotope notation is a list of units, where each unit is of
+            the form NXxxn, where N the atomic mass, Xxx is the element,
+            and n is the count (subscript). Any character except A-Z, 0-9,
+            +, -, [, or ] may be used to separate the units in the list,
+            space is most common. If no atomic mass is specified, the most
+            common isotope is assumed (e.g. C -> 12C). A charge may optionally
+            be given as the last element. This notation is useful for inputting
+            many unusual isotopes.
 
             Isotope notation: '12C2 15N O3 2-'
 
-            Emperical formula notation is a form of shorthand. It contains
-            no spaces and no isotope numbers, only count numbers.
-            Isotopes can optionally be given, surrounded by []. A charge
-            may optionally be given at the end, also surrounded by [].
+            Molecular formula notation is a form of shorthand. It contains
+            no spaces and no atomic masses, only count numbers. If an atomic
+            mass needs to be given for an isotope, it must be surrounded by [].
+            A charge may optionally be given at the end, also surrounded by [].
             This form is useful for inputting larger molecules with few
             unusual isotopes.
 
-            Empirical formula notation: 'HCOOCH2[15]NH3[2-]'
+            Molecular formula notation: 'HCOOCH2[15]NH3[2-]'
 
             D is an accepted alias for 2H, but is internally converted
             to 2H. See Molecule.formula() for output options.
@@ -107,6 +151,7 @@ class Molecule(object):
         self.chargesign = ''
 
         self.elements = []
+        self.isotopes = []
         self.counts = []
         self.atomic_numbers = []
         self.atomic_masses = []
@@ -120,94 +165,79 @@ class Molecule(object):
     def __str__(self):
         return self.input + ' --> ' + self.molecular_formula
 
+    def is_molecular_formula(self):
+        """ Parses a string to determine if it is in the molecular notation.
+
+            Returns True if the input string is in the molecular formula
+            notation, False otherwise.
+        """
+        return _mn_allowed_chars.matches(self.input)
+
     def parse(self):
         """ Parse input, retrieve elements from periodic table,
             calculate mass and abundance.
         """
-        # TODO: convert to using pyparsing, easier for future maintenance.
         self.input = self.input.strip()
 
-        # Determine notation
-        if (len(re.findall(_is_single_rx, self.input)) == 1 or
-            not re.match(_is_empirical_rx, self.input)):
-                units = re.findall(_isotope_notation_rx, self.input)
+        # Parse input string into pyparsing.ParseResult objects
+        if self.is_molecular_formula():
+            molec = _mn_molecule.parseString(self.input, parseAll=True)
         else:
-            units = re.findall(_empirical_notation_rx, self.input)
+            delim_string = _in_delimiter.transformString(self.input)
+            molec = _in_molecule.parseString(delim_string, parseAll=True)
 
-        # Check for charge and sign in input
-        if '[' in units[-1][1]:
-            chsgn = units.pop(-1)[1].strip(' []')
-            charge = chsgn.strip('+-')
-        elif '+' in units[-1][1] or '-' in units[-1][1]:
-            charge, chsgn, skip = units.pop(-1)
-        else:
-            charge = 0
-            chsgn = ''
-
-        if chsgn in ('+', '-', 'o', 'O', '0', ''):
-            self.chargesign = chsgn
-        else:
-            raise FormatError('Unknown chargesign: {}'.format(chsgn))
-
-        if charge == '':
-            if chsgn:
-                self.charge = 1
+        # Collect data from ParseResult objects,
+        # merge mulitple occurances of same element.
+        data = {}
+        for unit in molec.units:
+            label = unit.atomic_mass + unit.element
+            if label not in data.keys():
+                data[label] = {
+                    'atomic_mass': unit.atomic_mass,
+                    'element': unit.element,
+                    'count': int(unit.get('count', 1))
+                }
             else:
-                self.charge = 0
-        else:
-            self.charge = int(charge)
+                data[label]['count'] += int(unit.get('count', 1))
 
-        # Fix certain shorthand notations
-        iunits = []
-        for u in units:
-            # u = ['12', 'C', '2']
-            u = list(u)
+        # Sort and split data into lists.
+        for k in sorted(data.keys()):
+            am = data[k]['atomic_mass']
+            el = data[k]['element']
+            if el == 'D':
+                # special case
+                el = 'H'
+                am = 2
+            elif am:
+                am = int(am)
+            else:
+                # no atomic mass given, find major isotope, e.g. C -> 12C
+                am = periodic_table[periodic_table['element'] == el].iloc[0].loc['major isotope']
+                am = int(am.strip(el))
+            self.atomic_masses.append(am)
+            self.elements.append(el)
+            self.isotopes.append(str(am) + el)
+            self.counts.append(data[k]['count'])
 
-            # D -> 2H
-            if u[1] == 'H' and not u[0]:
-                u[0] = '1'
-            elif u[1] == 'D':
-                u[0] = '2'
-                u[1] = 'H'
-            elif u[1] == 'T':
-                u[0] = '3'
-                u[1] = 'H'
-
-            # C -> 12C
-            if u[0] == '':
-                mi = periodic_table[periodic_table['element'] == u[1]].iloc[0].loc['major isotope']
-                u[0] = mi.strip(u[1])
-
-            # Stoichiometry
-            try:
-                u[2] = int(u[2])
-            except ValueError:
-                if u[2] == '':
-                    u[2] = 1
-                else:
-                    msg = 'Stoichiometry not a number: {}'
-                    raise FormatError(msg.format(''.join(u)))
-
-            # Isotope from element and isotope number.
-            # Repeat each isotope count times, so Counter can count all.
-            iunits += [str(u[0]) + u[1]] * u[2]
-
-        c = Counter(iunits)
-        self.isotopes = sorted(c.keys())
-        self.counts = [c[i] for i in self.isotopes]
-
+        # Retrieve additional information from periodic table
         for i in self.isotopes:
             isotope = periodic_table[periodic_table['isotope'] == i].iloc[0]
-            self.elements.append(isotope['element'])
             self.atomic_numbers.append(isotope['atomic number'])
-            self.atomic_masses.append(isotope['atomic mass'])
             self.masses.append(isotope['mass'])
             self.abundances.append(isotope['abundance'])
 
-        for m, s in zip(self.masses, self.counts):
-            self.mass += m * s
+        # Calculate total mass of molecule
+        for m, c in zip(self.masses, self.counts):
+            self.mass += m * c
 
-        # adjust mass for extra or missing electrons (charge)
+        # Find charge and sign
+        self.chargesign = molec.charge[0].charge_sign
+        if self.chargesign in ('o', '0', ''):
+            self.charge = 0
+        else:
+            self.charge = int(molec.charge[0].get('charge_count', 1))
+
+        # Adjust mass for extra or missing electrons (charge)
         if self.chargesign == '+':
             self.mass -= mass_electron * self.charge
         elif self.chargesign == '-':
@@ -264,10 +294,6 @@ class Molecule(object):
             abun_per_el.append(abun)
         self.abundance = prod(abun_per_el)
 
-    def sort(self):
-        """ Sort elements from heavy to light, but keep same elements together. """
-        raise NotImplementedError('not yet')
-
     def formula(self, style='plain', HtoD=True, show_charge=True, template={}):
         """ Return the molecular formula as a string.
 
@@ -285,7 +311,7 @@ class Molecule(object):
 
             If style='custom', a custom template can be used to
             format the molecular formula. The template must be
-            a dict containing 6 keys: isotope, element, count,
+            a dict containing 6 keys: atomic_mass, element, count,
             charge, minorjoin, and majorjoin. The isotope,
             element, count, and charge keys should refer to a
             template string containing a curly bracket pair,
@@ -310,8 +336,7 @@ class Molecule(object):
         count = [str(c) if c > 1 else '' for c in self.counts]
 
         if HtoD:
-            for n, x in enumerate(zip(amass, elem)):
-                am, el = x
+            for n, (am, el) in enumerate(zip(amass, elem)):
                 if el == 'H':
                     if am == '1':
                         amass[n] = ''
@@ -337,7 +362,7 @@ class Molecule(object):
         molecule = []
         for am, el, ct in zip(amass, elem, count):
             if am:
-                am_str = templ['isotope'].format(am)
+                am_str = templ['atomic_mass'].format(am)
             else:
                 am_str = ''
             el_str = templ['element'].format(el)
