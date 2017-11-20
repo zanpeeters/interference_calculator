@@ -73,42 +73,66 @@ _mn_charge = pp.Optional(
 _mn_molecule = _mn_unit('units') + _mn_charge
 
 # Templates for output, add new templates to list.
-templates = ['html_template', 'latex_template', 'isotope_template', 'molecular_template']
+templates = ['html_template', 'latex_template', 'mhchem_template', 'isotope_template', 'molecular_template']
 
 html_template = {
+    'begin': '',
     'atomic_mass': '<sup>{}</sup>',
     'element': '{}',
     'count': '<sub>{}</sub>',
     'charge': '<sup>{}</sup>',
     'minorjoin': '',
-    'majorjoin': ''
+    'majorjoin': '',
+    'minus': '&ndash;',
+    'end': ''
 }
 
 latex_template = {
+    'begin': '$',
     'atomic_mass': '{{}}^{{{}}}',
     'element': '{{{}}}',
     'count': '_{{{}}}',
     'charge': '{{}}^{{{}}}',
     'minorjoin': '',
-    'majorjoin': ''
+    'majorjoin': '',
+    'minus': '--',
+    'end': '$'
+}
+
+mhchem_template = {
+    'begin': '\ce{',
+    'atomic_mass': '^{{{}}}',
+    'element': '{}',
+    'count': '{}',
+    'charge': '^{}',
+    'minorjoin': '',
+    'majorjoin': '',
+    'minus': '',
+    'end': '}'
 }
 
 isotope_template = {
+    'begin': '',
     'atomic_mass': '{}',
     'element': '{}',
     'count': '{}',
     'charge': '{}',
     'minorjoin': '',
-    'majorjoin': ' '
+    'majorjoin': ' ',
+    'minus': '',
+    'end': ''
 }
 
 molecular_template = {
+    'begin': '',
     'atomic_mass': '[{}]',
     'element': '{}',
     'count': '{}',
     'charge': '[{}]',
     'minorjoin': '',
-    'majorjoin': ''
+    'majorjoin': '',
+    'minus': '',
+    'end': ''
 }
 
 class Molecule(object):
@@ -292,12 +316,13 @@ class Molecule(object):
             abun_per_el.append(abun)
         self.abundance = prod(abun_per_el)
 
-    def formula(self, style='plain', HtoD=True, show_charge=True, template={}):
+    def formula(self, style='plain', HtoD=True, show_charge=True, all_isotopes=False, template={}):
         """ Return the molecular formula as a string.
 
             The molecular formula can be formatted as html
-            (style='html'), LaTeX (style='latex'), plain
-            text isotope notation (style='isotope', or style=
+            (style='html'), LaTeX (style='latex'), LaTeX with
+            mhchem package (style='mhchem'), plain
+            text isotope notation (style='isotope' or
             'plain', default), molecular formula notation
             (style='molecular'), or in a custom format
             (style='custom'), see below.
@@ -308,31 +333,31 @@ class Molecule(object):
             Charge and sign will be automatically added, unless
             show_charge is set to False.
 
+            Only atomic masses of minor isotopes will be given
+            in the output; set all_isotopes=True to explicitly
+            give the atomic mass for each isotope. all_isotopes
+            takes precedence over HtoD: 1H and 2H will b used
+            instead of H and D.
+
             If style='custom', a custom template can be used to
             format the molecular formula. The template must be
-            a dict containing 6 keys: atomic_mass, element, count,
-            charge, minorjoin, and majorjoin. The isotope,
-            element, count, and charge keys should refer to a
-            template string containing a curly bracket pair,
-            which will be replaced using string.format(). The
-            minorjoin string will be used to connect all the
-            parts into one unit, while the majorjoin string
-            will be used to connect all the units into the
-            final output string.
+            a dict containing 9 keys: begin, atomic_mass, element,
+            count, charge, minorjoin, majorjoin, minus, and end.
+            A curly brace pair in the atomic_mass, element, count,
+            and charge template strings will be replaced using
+            string.format(). The minorjoin string will be used
+            to join all the atomic mass, element, and count
+            into a unit, and the majorjoin string connects all
+            the units into the output string. The begin and end
+            strings are added to the beginning and end of the final
+            output string, respectively.
         """
-        if show_charge:
-            if self.charge == 0:
-                charge = ''
-            elif self.charge == 1:
-                charge = self.chargesign
-            else:
-                charge = str(self.charge) + self.chargesign
-        else:
-            charge = ''
-
         elem = self.elements.copy()
         amass = [str(u) for u in self.atomic_masses]
         count = [str(c) if c > 1 else '' for c in self.counts]
+
+        if all_isotopes:
+            HtoD = False
 
         if HtoD:
             for n, (am, el) in enumerate(zip(amass, elem)):
@@ -347,6 +372,8 @@ class Molecule(object):
             templ = html_template
         elif style == 'latex':
             templ = latex_template
+        elif style == 'mhchem':
+            templ = mhchem_template
         elif style == 'molecular':
             templ = molecular_template
         elif style in ('plain', 'isotope'):
@@ -356,12 +383,33 @@ class Molecule(object):
                 raise ValueError('If you select style="custom", you must supply a custom template.')
             templ = template
         else:
-            raise ValueError('style must be one of "html", "latex", "plain", "isotope", or "custom".')
+            msg = 'style must be one of "html", "latex", "mhchem", '
+            msg += '"plain", "isotope", "molecular", or "custom".'
+            raise ValueError(msg)
+
+        if show_charge:
+            if self.chargesign == '-' and templ['minus']:
+                chargesign = templ['minus']
+            else:
+                chargesign = self.chargesign
+
+            if self.charge == 0:
+                charge = ''
+            elif self.charge == 1:
+                charge = chargesign
+            else:
+                charge = str(self.charge) + chargesign
+        else:
+            charge = ''
 
         molecule = []
         for am, el, ct in zip(amass, elem, count):
             if am:
-                am_str = templ['atomic_mass'].format(am)
+                if (not all_isotopes and
+                    (periodic_table['major isotope'] == am + el).any()):
+                        am_str = ''
+                else:
+                    am_str = templ['atomic_mass'].format(am)
             else:
                 am_str = ''
             el_str = templ['element'].format(el)
@@ -371,9 +419,11 @@ class Molecule(object):
                 ct_str = ''
             m = templ['minorjoin'].join((am_str, el_str, ct_str))
             molecule.append(m)
+
         if charge:
             molecule.append(templ['charge'].format(charge))
-        return templ['majorjoin'].join(molecule)
+
+        return templ['begin'] + templ['majorjoin'].join(molecule) + templ['end']
 
 
 if __name__ == '__main__':
