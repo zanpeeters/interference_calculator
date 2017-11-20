@@ -330,7 +330,7 @@ class Molecule(object):
         else:
             charge = ''
 
-        elem = self.elements
+        elem = self.elements.copy()
         amass = [str(u) for u in self.atomic_masses]
         count = [str(c) if c > 1 else '' for c in self.counts]
 
