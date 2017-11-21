@@ -13,7 +13,8 @@ from numpy import prod
 from scipy.misc import factorial
 
 __all__ = ['Molecule', 'mass_electron', 'periodic_table',
-           'templates', 'html_template', 'latex_template', 'isotope_template']
+           'templates', 'html_template', 'latex_template',
+           'mhchem_template', 'isotope_template', 'molecular_template']
 
 _periodic_table_file = pkg_resources.resource_filename(__name__, 'periodic_table.csv')
 periodic_table = pd.read_csv(_periodic_table_file, comment='#')
@@ -426,9 +427,3 @@ class Molecule(object):
             molecule.append(templ['charge'].format(charge))
 
         return templ['begin'] + templ['majorjoin'].join(molecule) + templ['end']
-
-
-if __name__ == '__main__':
-    m = Molecule('12C2 15N H4 2+')
-    print(m.formula(style='html'))
-    print(m.mass, m.abundance)

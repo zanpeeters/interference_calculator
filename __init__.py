@@ -12,6 +12,5 @@
     $ sudo python -M interference_calculator.isotope_data -c \
          "interference_calculator.isotope_data.update()"
 """
-from __future__ import absolute_import
 from .molecule import *
 from .interference_calculator import *

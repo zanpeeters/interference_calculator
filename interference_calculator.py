@@ -4,7 +4,7 @@
 
 import pandas as pd
 import itertools
-from molecule import Molecule, mass_electron, periodic_table
+from .molecule import Molecule, mass_electron, periodic_table
 
 __all__ = ['interference', 'standard_ratio']
 
@@ -140,9 +140,3 @@ def standard_ratio(atoms, style='html'):
     data['isotope'] = pretty_isotopes
 
     return data[['isotope', 'mass', 'abundance', 'ratio', 'inverse ratio', 'standard']]
-
-if __name__ == '__main__':
-    print('Possible interferences for MgO given a sample consisting of H, C, O, N, and Si:')
-    print(interference(['H', 'C', 'O', 'N', 'Si'], 'MgO'))
-    print('Standard ratios of C, S, and H:')
-    print(standard_ratio(['C', 'S', 'H']))
