@@ -7,6 +7,7 @@
 """
 import pandas as pd
 import pyparsing as pp
+import pkg_resources
 
 from numpy import prod
 from scipy.misc import factorial
@@ -14,7 +15,8 @@ from scipy.misc import factorial
 __all__ = ['Molecule', 'mass_electron', 'periodic_table',
            'templates', 'html_template', 'latex_template', 'isotope_template']
 
-periodic_table = pd.read_csv('periodic_table.csv', comment='#')
+_periodic_table_file = pkg_resources.resource_filename(__name__, 'periodic_table.csv')
+periodic_table = pd.read_csv(_periodic_table_file, comment='#')
 
 # CODATA 2014, http://physics.nist.gov/cgi-bin/cuu/Value?me
 mass_electron = 0.0005485799090
