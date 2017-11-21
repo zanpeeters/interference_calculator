@@ -18,8 +18,6 @@ import numpy as np
 from interference_calculator import interference, standard_ratio
 from molecule import Molecule, periodic_table
 
-_float_qrx = QtCore.QRegExp(r'^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$')
-_float_validator = QtGui.QRegExpValidator(_float_qrx)
 _isotope_rx = re.compile(r'(\d*[A-Z][a-z]{0,2})')
 _charges_rx = re.compile(r'(\d+)')
 
