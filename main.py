@@ -4,7 +4,7 @@
 
 import pandas as pd
 import itertools
-from .molecule import Molecule, mass_electron, periodic_table
+from interference_calculator.molecule import Molecule, mass_electron, periodic_table
 
 __all__ = ['interference', 'standard_ratio']
 
