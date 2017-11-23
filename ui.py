@@ -42,7 +42,7 @@ class TableModel(QtCore.QAbstractTableModel):
                     if index.column() == 0:
                         # formula
                         m = Molecule(self._data.iloc[index.row(), index.column()])
-                        return m.formula(style='html')
+                        return m.formula(style='html', all_isotopes=True)
                     elif index.column() == 1:
                         # mass
                         return '{:.6f}'.format(self._data.iloc[index.row(), index.column()])
@@ -61,7 +61,7 @@ class TableModel(QtCore.QAbstractTableModel):
                     if index.column() == 0:
                         # formula
                         m = Molecule(self._data.iloc[index.row(), index.column()])
-                        return m.formula(style='html')
+                        return m.formula(style='html', all_isotopes=True)
                     elif index.column() == 1:
                         # mass
                         return '{:.6f}'.format(self._data.iloc[index.row(), index.column()])
@@ -484,7 +484,7 @@ class MainWidget(widgets.QWidget):
         if not self.check_atoms_input():
             return
 
-        data = standard_ratio(self.atoms)
+        data = standard_ratio(self.atoms, style='plain')
         data.index = range(1, data.shape[0] + 1)
 
         model = TableModel(data, table='std_ratios')
