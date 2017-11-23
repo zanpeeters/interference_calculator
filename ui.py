@@ -15,8 +15,8 @@ except ImportError:
 
 import sys, re, platform
 import numpy as np
-from main import interference, standard_ratio
-from molecule import Molecule, periodic_table
+from interference_calculator.main import interference, standard_ratio
+from interference_calculator.molecule import Molecule, periodic_table
 
 _isotope_rx = re.compile(r'(\d*[A-Z][a-z]{0,2})')
 _charges_rx = re.compile(r'(\d+)')
