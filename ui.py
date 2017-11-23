@@ -447,6 +447,18 @@ class MainWidget(widgets.QWidget):
                 self.check_mz_input()):
             return
 
+        if not self.mz:
+            msg = 'If you do not specify a target, <b>ALL</b> combinations '
+            msg += 'up to <i>max size</i> will be calculated. This can take '
+            msg += 'a <b>long</b> time. Are you sure?'
+            qmsg = widgets.QMessageBox(self)
+            qmsg.setText('Long calculation warning')
+            qmsg.setInformativeText(msg)
+            qmsg.setIcon(widgets.QMessageBox.Warning)
+            qmsg.setStandardButtons(widgets.QMessageBox.Ok|widgets.QMessageBox.Cancel)
+            if qmsg.exec_() == widgets.QMessageBox.Cancel:
+                return
+
         self.maxsize = self.maxsize_input.value()
         self.chargesign = self.chargesign_input.currentText()
         self.mzrange = self.mzrange_input.value()
