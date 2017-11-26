@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """ Load the interference_calculator module. """
 from interference_calculator.molecule import *

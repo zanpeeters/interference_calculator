@@ -1,5 +1,5 @@
-# Help and tooltip text for ui.py
-
+# -*- coding: utf-8 -*-
+""" Help and tooltip text for ui.py """
 import sys
 
 atoms_input_tooltip = '''

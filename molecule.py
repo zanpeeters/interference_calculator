@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """ Molecule() is a class that takes an input string of a chemical formula,
     parses the string into atomic units, and stores relevant molecular data.
