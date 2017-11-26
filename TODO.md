@@ -1,8 +1,0 @@
-- in molecule.py: fix charge/chargesign input parsing
-- in molecule.py: change to pyparsing for input parsing (may help with previous)
-- check dealing with H/D
-- sorting molecules, sorting atoms in molecule
-- icon
-- license (BSD?)
-- create win exe
-- publish on github -> pip
