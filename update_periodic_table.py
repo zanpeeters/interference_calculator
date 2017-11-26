@@ -8,24 +8,6 @@
 import pandas as pd
 import requests
 
-header = '''# Periodic table
-#
-# The data in this file are published by the International Union of Pure and Applied Chemistry (IUPAC),
-# Commission on Isotopic Abundances and Atomic Weights (CIAAW). The data were downloaded from the
-# following sources. See links for more information and references.
-#
-# * atomic masses
-#     publication: Wang et al, The Ame2012 atomic mass evaluation, Chinese Physics C, 2012, 36, 1603-2014
-#     doi: https://doi.org/10.1088/1674-1137/36/12/003
-#     data url: {}
-#
-# * isotopic abundances:
-#     publication: Meija et al, Isotopic compositions of the elements 2013, Pure and Applied Chemistry, 2016, 88, 293-306 (table 1)
-#     doi: https://doi.org/10.1515/pac-2015-0503
-#     data url: {}
-#
-'''
-
 mass_url = 'http://ciaaw.org/atomic-masses.htm'
 abun_url = ' https://www.degruyter.com/table/j/pac.2016.88.issue-3/pac-2015-0503/pac-2015-0503.xml?id=j_pac-2015-0503_tab_001'
 output = 'periodic_table.csv'
@@ -137,5 +119,4 @@ mass = mass[['atomic number', 'element', 'element name', 'major isotope',
              'isotope', 'atomic mass', 'mass', 'abundance', 'standard']]
 
 with open(output, mode='wt', encoding='utf-8') as fh:
-    fh.write(header.format(mass_url, abun_url))
     mass.to_csv(fh, index=False)

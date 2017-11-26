@@ -1,19 +1,3 @@
-# Periodic table
-#
-# The data in this file are published by the International Union of Pure and Applied Chemistry (IUPAC),
-# Commission on Isotopic Abundances and Atomic Weights (CIAAW). The data were downloaded from the
-# following sources. See links for more information and references.
-#
-# * atomic masses
-#     publication: Wang et al, The Ame2012 atomic mass evaluation, Chinese Physics C, 2012, 36, 1603-2014
-#     doi: https://doi.org/10.1088/1674-1137/36/12/003
-#     data url: http://ciaaw.org/atomic-masses.htm
-#
-# * isotopic abundances:
-#     publication: Meija et al, Isotopic compositions of the elements 2013, Pure and Applied Chemistry, 2016, 88, 293-306 (table 1)
-#     doi: https://doi.org/10.1515/pac-2015-0503
-#     data url:  https://www.degruyter.com/table/j/pac.2016.88.issue-3/pac-2015-0503/pac-2015-0503.xml?id=j_pac-2015-0503_tab_001
-#
 atomic number,element,element name,major isotope,isotope,atomic mass,mass,abundance,standard
 1,H,hydrogen,1H,1H,1,1.0078250322,0.99984426,VSMOW
 1,H,hydrogen,1H,2H,2,2.0141017781,0.00015574,VSMOW
