@@ -17,6 +17,7 @@ import sys, re, platform
 import numpy as np
 from interference_calculator.main import interference, standard_ratio
 from interference_calculator.molecule import Molecule, periodic_table
+from interference_calculator.ui_help import *
 
 _isotope_rx = re.compile(r'(\d*[A-Z][a-z]{0,2})')
 _charges_rx = re.compile(r'(\d+)')
@@ -223,6 +224,10 @@ class MainWidget(widgets.QWidget):
         # Action button
         self.interference_button = widgets.QPushButton('calculate interference', parent=self)
         self.standard_ratio_button = widgets.QPushButton('standard ratio', parent=self)
+        self.help_button = widgets.QPushButton('', parent=self)
+        self.help_button.setIcon(QtGui.QIcon('help.png'))
+        self.help_button.setFixedSize(21,21)
+        self.help_button.setStyleSheet('border: none;')
 
         # Table output
         self.table_output = TableView(html_cols=0)
@@ -278,6 +283,7 @@ class MainWidget(widgets.QWidget):
         self.button_layout = widgets.QHBoxLayout()
         self.button_layout.addWidget(self.interference_button)
         self.button_layout.addWidget(self.standard_ratio_button)
+        self.button_layout.addWidget(self.help_button)
 
         self.output_layout = widgets.QHBoxLayout()
         self.output_layout.addWidget(self.table_output)
@@ -293,6 +299,7 @@ class MainWidget(widgets.QWidget):
         # Connect
         self.interference_button.clicked.connect(self.calculate_interference)
         self.standard_ratio_button.clicked.connect(self.show_standard_ratio)
+        self.help_button.clicked.connect(self.show_help)
         self.atoms_input.editingFinished.connect(self.check_atoms_input)
         self.charges_input.editingFinished.connect(self.check_charges_input)
         self.mz_input.editingFinished.connect(self.check_mz_input)
@@ -305,55 +312,19 @@ class MainWidget(widgets.QWidget):
         self.setTabOrder(self.chargesign_input, self.maxsize_input)
         self.setTabOrder(self.maxsize_input, self.interference_button)
         self.setTabOrder(self.interference_button, self.standard_ratio_button)
-        self.setTabOrder(self.standard_ratio_button, self.table_output)
+        self.setTabOrder(self.standard_ratio_button, self.help_button)
+        self.setTabOrder(self.help_button, self.table_output)
 
         # Set tooltip help
-        self.atoms_input.setToolTip('''<html><head/><body>
-            <p><b>List of atoms to include.</b></p>
-            <p>Give the composition of the sample. List all atoms separated by space.
-            All isotopes for each element are included automatically.</p>
-            </body></html>''')
-        self.charges_input.setToolTip('''<html><head/><body>
-            <p><b>List of charges to apply.</b></p>
-            <p>Give a list of ion charges, separated by space, to be considered for the
-            target ion. Only use numbers, do not include the charge sign. For example,
-            \'1 2 3\' will calculate mass-to-charge ratios for +, 2+, and 3+ (or -)
-            charged ions. Default value is 1.</p>
-            </body></html>''')
-        self.chargesign_input.setToolTip('''<html><head/><body>
-            <p><b>Select sign of ionic charge.</b></p>
-            <p>The mass of the resulting ion depends on the charge sign and is corrected
-            for the mass of the extra electron (&ndash;), missing electron (+), or not
-            corrected (o).</p>
-            </body></html>''')
-        self.mz_input.setToolTip('''<html><head/><body>
-            <p><b>Target mass-to-charge ratio.</b></p>
-            <p>Give a mass-to-charge (m/z) value to filter the results. Only molecules
-            with m/z ± range and up to max size atoms will be shown.</p>
-            <p>If empty, all possible combinations of all isotopes of the selected
-            atoms will be displayed. <i>This may be a very long list!</i></p>
-            </body></html>''')
-        self.mzrange_input.setToolTip('''<html><head/><body>
-            <p><b>Target mass-to-charge range.</b></p>
-            <p>Give a range of mass-to-charge ratios to filter the results.
-            Default value is 0.3</p>
-            </body></html>''')
-        self.maxsize_input.setToolTip('''<html><head/><body>
-            <p><b>Maximum molecule size.</b></p>
-            <p>Give the maximum number of atoms in a molecule. The number of
-            possible combinations of <i>n</i> atoms in a molecule grows exponentially
-            with <i>n</i>, so keep this number low to avoid obscenely large lists.</p>
-            </body></html>''')
-        self.interference_button.setToolTip('''<html><head/><body>
-            <p>(enter)</p>
-            </body></html>''')
-        if sys.platform == 'darwin':
-            modifier = '&#8984;'
-        else:
-            modifier = 'ctrl'
-        self.standard_ratio_button.setToolTip('''<html><head/><body>
-            <p>({}-enter)</p>
-            </body></html>'''.format(modifier))
+        self.atoms_input.setToolTip(atoms_input_tooltip)
+        self.charges_input.setToolTip(charges_input_tooltip)
+        self.chargesign_input.setToolTip(chargesign_input_tooltip)
+        self.mz_input.setToolTip(mz_input_tooltip)
+        self.mzrange_input.setToolTip(mzrange_input_tooltip)
+        self.maxsize_input.setToolTip(maxsize_input_tooltip)
+        self.interference_button.setToolTip(interference_button_tooltip)
+        self.standard_ratio_button.setToolTip(standard_ratio_button_tooltip)
+        self.help_button.setToolTip(help_button_tooltip)
 
     @QtCore.pyqtSlot()
     def check_atoms_input(self):
@@ -423,7 +394,8 @@ class MainWidget(widgets.QWidget):
         """ Link enter/return to calculate button,
             cmd/ctrl-enter/return to standard ratio,
             cmd/ctrl-c to table data copy,
-            cmd/ctrl-a to select all in table.
+            cmd/ctrl-a to select all in table,
+            cmd/ctrl-? to open help.
         """
         key = event.key()
         mod = event.modifiers()
@@ -433,9 +405,11 @@ class MainWidget(widgets.QWidget):
             else:
                 self.calculate_interference()
         elif (key == QtCore.Qt.Key_C and mod == QtCore.Qt.ControlModifier):
-                self.table_output.copy()
+            self.table_output.copy()
         elif (key == QtCore.Qt.Key_A and mod == QtCore.Qt.ControlModifier):
-                self.table_output.selectAll()
+            self.table_output.selectAll()
+        elif (key == QtCore.Qt.Key_Question and mod == QtCore.Qt.ControlModifier):
+            self.show_help()
         else:
             super().keyPressEvent(event)
 
@@ -448,12 +422,9 @@ class MainWidget(widgets.QWidget):
             return
 
         if not self.mz:
-            msg = 'If you do not specify a target, <b>ALL</b> combinations '
-            msg += 'up to <i>max size</i> will be calculated. This can take '
-            msg += 'a <b>long</b> time. Are you sure?'
             qmsg = widgets.QMessageBox(self)
             qmsg.setText('Long calculation warning')
-            qmsg.setInformativeText(msg)
+            qmsg.setInformativeText(mz_warning)
             qmsg.setIcon(widgets.QMessageBox.Warning)
             qmsg.setStandardButtons(widgets.QMessageBox.Ok|widgets.QMessageBox.Cancel)
             if qmsg.exec_() == widgets.QMessageBox.Cancel:
@@ -495,6 +466,17 @@ class MainWidget(widgets.QWidget):
         except AttributeError:
             # PyQt4
             self.table_output.horizontalHeader().setResizeMode(widgets.QHeaderView.Stretch)
+
+    @QtCore.pyqtSlot()
+    def show_help(self):
+        """ Display help window. """
+        dialog = widgets.QDialog(parent=self)
+        dialog.resize(600,480)
+        text = widgets.QLabel(parent=dialog)
+        text.setText(help_text)
+        text.setWordWrap(True)
+        text.setMargin(20)
+        dialog.exec_()
 
 
 def run():
