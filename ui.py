@@ -202,8 +202,9 @@ class MainWidget(widgets.QWidget):
         self.maxsize_label = widgets.QLabel('max size', parent=self)
         self.maxsize_input = widgets.QSpinBox(parent=self)
         self.maxsize_input.setValue(self.maxsize)
+        self.maxsize_input.setMinimumWidth(80)
 
-        self.charges_label = widgets.QLabel('target charge(s)', parent=self)
+        self.charges_label = widgets.QLabel('charge(s)', parent=self)
         self.charges_input = widgets.QLineEdit(' '.join([str(c) for c in self.charges]), parent=self)
 
         self.chargesign_input = widgets.QComboBox(parent=self)
@@ -211,7 +212,6 @@ class MainWidget(widgets.QWidget):
         self.chargesign_input.addItem('o', 'o')
         self.chargesign_input.addItem('+', '+')
 
-        self.mz_label = widgets.QLabel('target mass/charge or molecule', parent=self)
         self.mz_input = widgets.QLineEdit(parent=self)
         self.mz_input.setPlaceholderText('number or formula: 26.0 or 12C 14N')
 
@@ -224,10 +224,9 @@ class MainWidget(widgets.QWidget):
         # Action button
         self.interference_button = widgets.QPushButton('calculate interference', parent=self)
         self.standard_ratio_button = widgets.QPushButton('standard ratio', parent=self)
-        self.help_button = widgets.QPushButton('', parent=self)
-        self.help_button.setIcon(QtGui.QIcon('help.png'))
-        self.help_button.setFixedSize(21,21)
-        self.help_button.setStyleSheet('border: none;')
+        self.help_button = widgets.QPushButton('?', parent=self)
+        self.help_button.setFixedSize(20, 20)
+        self.help_button.setStyleSheet('background-color: #1f77b4; color: white; border-radius: 10;')
 
         # Table output
         self.table_output = TableView(html_cols=0)
@@ -259,26 +258,24 @@ class MainWidget(widgets.QWidget):
         self.atoms_group_layout.addWidget(self.atoms_input)
         self.atoms_group.setLayout(self.atoms_group_layout)
 
+        self.target_group = widgets.QGroupBox('target')
+        self.target_group.setSizePolicy(pol)
+        self.target_group_layout = widgets.QHBoxLayout()
+        self.target_group_layout.addWidget(self.mz_input)
+        self.target_group_layout.addWidget(self.mzrange_label)
+        self.target_group_layout.addWidget(self.mzrange_input)
+        self.target_group.setLayout(self.target_group_layout)
+
         self.parameters_group = widgets.QGroupBox('interference parameters')
         self.parameters_group.setSizePolicy(pol)
-        self.parameters_group_layout = widgets.QVBoxLayout()
+        self.parameters_group_layout = widgets.QHBoxLayout()
+        self.parameters_group_layout.addWidget(self.charges_label)
+        self.parameters_group_layout.addWidget(self.charges_input)
+        self.parameters_group_layout.addWidget(self.chargesign_input)
+        self.parameters_group_layout.addSpacing(25)
+        self.parameters_group_layout.addWidget(self.maxsize_label)
+        self.parameters_group_layout.addWidget(self.maxsize_input)
         self.parameters_group.setLayout(self.parameters_group_layout)
-
-        self.param_top_layout = widgets.QGridLayout()
-        self.param_top_layout.addWidget(self.mz_label, 0, 0)
-        self.param_top_layout.addWidget(self.mz_input, 1, 0)
-        self.param_top_layout.addWidget(self.mzrange_label, 1, 1)
-        self.param_top_layout.addWidget(self.mzrange_input, 1, 2)
-
-        self.param_bottom_layout = widgets.QGridLayout()
-        self.param_bottom_layout.addWidget(self.charges_label, 0, 0)
-        self.param_bottom_layout.addWidget(self.charges_input, 1, 0)
-        self.param_bottom_layout.addWidget(self.chargesign_input, 1, 1)
-        self.param_bottom_layout.addWidget(self.maxsize_label, 0, 2)
-        self.param_bottom_layout.addWidget(self.maxsize_input, 1, 2)
-
-        self.parameters_group_layout.addLayout(self.param_top_layout)
-        self.parameters_group_layout.addLayout(self.param_bottom_layout)
 
         self.button_layout = widgets.QHBoxLayout()
         self.button_layout.addWidget(self.interference_button)
@@ -290,7 +287,9 @@ class MainWidget(widgets.QWidget):
 
         self.layout = widgets.QVBoxLayout()
         self.layout.addWidget(self.atoms_group)
-        self.layout.addItem(widgets.QSpacerItem(10,10))
+        self.layout.addSpacing(10)
+        self.layout.addWidget(self.target_group)
+        self.layout.addSpacing(10)
         self.layout.addWidget(self.parameters_group)
         self.layout.addLayout(self.button_layout)
         self.layout.addLayout(self.output_layout)
