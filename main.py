@@ -89,7 +89,7 @@ def interference(atoms, target, targetrange=0.3, maxsize=5, charge=[1],
             # push the inferred charge back to target
             if inferred_charge:
                 if target_charge == 0:
-                    target += ' o'
+                    pass
                 elif target_charge == 1:
                     target += ' {}'.format(target_chargesign)
                 else:
