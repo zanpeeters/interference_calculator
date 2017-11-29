@@ -7,56 +7,96 @@ from interference_calculator.molecule import Molecule, mass_electron, periodic_t
 
 __all__ = ['interference', 'standard_ratio']
 
-def interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1],
-                 chargesign='-', style='html'):
-    """ For a list of atoms, calculate all molecular ions that can be formed
-        from those atoms, including all isotopes, up to maxsize atoms,
-        that have a mass-to-charge ratio within mz +/- mzrange.
+def interference(atoms, target, targetrange=0.3, maxsize=5, charge=[1],
+                 chargesign='-', style='plain'):
+    """ For a list of atoms (the composition of the sample),
+        calculate all molecules that can be formed from a
+        combination of those atoms (the interferences),
+        including all stable isotopes, up to maxsize atoms,
+        that have a mass-to-charge ratio within target ± targetrange.
 
-        The mass-to-charge ratio (mz) can be given as a number or as a
+        The target can be given as a mass-to-charge ratio or as a
         molecular formula. Molecular formulas are interpreted by Molecule().
         See Molecule() docstring for a detailed explanation on how to enter
-        molecular formulas. If mz is None, no filtering will be done and
-        all possible combinations of all isotopes up to maxsize length will
-        be calculated.
+        molecular formulas. If target is None, no filtering will be done and
+        all possible combinations of all atoms and isotopes up to maxsize
+        length will be calculated. Target information will be added to the
+        output, unless target is None.
 
         Charge is usually 1, irrespective of sign. Give charge = [1, 2, 3]
-        to also include higher charged ions. Masses are adjusted for missing
-        electrons (+ charge), extra electrons (- charge), or not adjusted
-        (o charge, lower-case letter O). Setting charge=0 has the same
-        effect as setting chargesign='o'.
+        to also include interferences with higher charges. Masses are 
+        adjusted for missing electrons (+ charge), extra electrons (- charge),
+        or not adjusted (o charge, lower-case letter O). Setting charge=0
+        has the same effect as setting chargesign='o'. The charge for the
+        target ion, if target is specified as molecule instead of a number,
+        can be different from the charge on the interferences. If no charge is
+        specified for the target, the first charge and the chargesign of the
+        interferences are used for the target.
 
-        Molecular formulas are formatted in style (default is 'html').
+        Molecular formulas are formatted in style (default is 'plain').
         See Molecule() for more options.
 
         Returns a pandas.DataFrame with a column 'molecule' with molecular formula,
         a column 'charge', a column 'mass/charge' for the mass-to-charge ratio, a
         column 'mass/charge diff' for the mass/charge difference between this ion
         and the target mass/charge, a column 'MRP' which gives the mass-resolving
-        power (mz/Δmz) needed to resolve this ion from the target ion, and a column
-        'probability', which gives the combinatorial probability of encoutering this
-        combination of isotopes, given the composition of the sample.
+        power (mz/Δmz) needed to resolve this ion from the target ion, a column
+        'target', which indicates whether this row was specified as the target,
+        and a column 'probability', which gives the combinatorial probability of
+        encoutering this combination of isotopes, given the composition of the
+        sample and the natural abundances of the isotopes.
     """
-    if isinstance(charge, int):
-        charge = [charge]
-    if chargesign not in ('+', '-', 'o', 'O', '0'):
-        raise ValueError('chargesign must be either "+", "-", or "o".')
+    if isinstance(charge, (int, float, str)):
+        charge = tuple(int(charge))
+    elif isinstance(charge, (tuple, list)):
+        charge = tuple(int(c) for c in charge)
+    else:
+        raise ValueError('charge must be given as a number or a list of numbers.')
 
-    picked_atoms = periodic_table[periodic_table['element'].isin(atoms)]
+    if chargesign not in ('+', '-', 'o', '0'):
+        raise ValueError('chargesign must be either "+", "-", "o", or "0".')
 
-    # Mass-to-charge can be given as either a number, or as a molecule (string).
-    # Calculate m/z from molecular formula.
-    if mz:
+    # How to handle charge?
+    # 1. charge for interferences
+    #       - can be multiple values
+    #       - specified by parameter
+    # 2. charge for target
+    #       - only one value
+    #       - can be different from 1
+    #       - must be specified in target formula
+    #       - if unspecified, take sign and first value from 1
+    if target:
         try:
-            mz = float(mz)
+            target_mz = float(target)
+            target = str(target)
+            target_charge = 0
+            target_chargesign = 'o'
+            target_abun = 1
         except ValueError:
-            m = Molecule(mz)
-            mz = m.mass
+            m = Molecule(target)
+            if m.chargesign:
+                target_chargesign = m.chargesign
+            else:
+                target_chargesign = chargesign
+            if m.charge:
+                target_charge = m.charge
+            else:
+                target_charge = charge[0]
+            target_mz = m.mass
+            target_abun = m.abundance
             if m.charge > 0:
-                mz /= m.charge
+                # mass correction done in Molecule.parse()
+                target_mz /= m.charge
+    else:
+        target_mz = 0
+        target_charge = 0
+        target_chargesign = '0'
+        target_abun = 0
 
+    # Retrieve info from perioic table for all atoms in sample.
     # Create a list with all possible combinations up to maxsize atoms.
     # Create same list for masses, combos are created in same order.
+    picked_atoms = periodic_table[periodic_table['element'].isin(atoms)]
     isotope_combos = []
     mass_combos = []
     for size in range(1, maxsize + 1):
@@ -66,17 +106,12 @@ def interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1],
         mass_combos.extend(list(m))
 
     masses = pd.DataFrame(mass_combos).sum(axis=1)
-
-    # Using Molecule() to convert atom list to molecular formula and
-    # calculate abundance is too slow for long list.
-    # For 5 atoms, max size 5, 8567 combos: 80 s. Do for trimmed list later.
     molecules = [' '.join(m) for m in isotope_combos]
-
     data = pd.DataFrame({'molecule': molecules,
                          'mass/charge': masses})
 
     # ignore charge(s) for sign o
-    if chargesign in ('o', 'O', '0'):
+    if chargesign in ('o', '0'):
         data['charge'] = 0
     else:
         data_w_charge = []
@@ -99,14 +134,14 @@ def interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1],
             data_w_charge.append(d)
         data = pd.concat(data_w_charge)
 
-    if mz:
-        data = data.loc[(data['mass/charge'] >= mz - mzrange)
-                      & (data['mass/charge'] <= mz + mzrange)]
-        data['mass/charge diff'] = data['mass/charge'] - mz
-        data['MRP'] = mz/data['mass/charge diff'].abs()
+    if target:
+        data = data.loc[(data['mass/charge'] >= target_mz - targetrange)
+                      & (data['mass/charge'] <= target_mz + targetrange)]
+        data['mass/charge diff'] = data['mass/charge'] - target_mz
+        data['MRP'] = target_mz/data['mass/charge diff'].abs()
     else:
         data['mass/charge diff'] = 0.0
-        data['MRP'] = 0.0
+        data['MRP'] = pd.np.inf
 
     molec = []
     abun = []
@@ -117,8 +152,19 @@ def interference(atoms, mz, mzrange=0.3, maxsize=5, charge=[1],
 
     data['molecule'] = molec
     data['probability'] = abun
+    data['target'] = False
+    target_data = {
+        'molecule': target,
+        'charge': target_charge,
+        'mass/charge': target_mz,
+        'mass/charge diff': 0,
+        'MRP': pd.np.inf,
+        'probability': target_abun,
+        'target': True
+    }
+    data = data.append(target_data, ignore_index=True)
     return data[['molecule', 'charge', 'mass/charge',
-                 'mass/charge diff', 'MRP', 'probability']]
+                 'mass/charge diff', 'MRP', 'probability', 'target']]
 
 def standard_ratio(atoms, style='html'):
     """ Give the stable isotopes and their standard abundance for the given element(s). """
