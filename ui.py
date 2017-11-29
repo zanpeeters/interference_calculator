@@ -22,9 +22,11 @@ from interference_calculator.ui_help import *
 _isotope_rx = re.compile(r'(\d*[A-Z][a-z]{0,2})')
 _charges_rx = re.compile(r'(\d+)')
 
+_red = (193, 24, 78)   #c1184e, fuchsia
+_blue = (31, 119, 180) #1f77b4, blue
+
 class TableModel(QtCore.QAbstractTableModel):
     """ Take a pandas DataFrame and set data in a QTableModel (read-only). """
-
     def __init__(self, data, table='interference', parent=None):
         QtCore.QAbstractTableModel.__init__(self, parent=parent)
         self._data = data
@@ -81,6 +83,10 @@ class TableModel(QtCore.QAbstractTableModel):
                     return QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter
             elif role == QtCore.Qt.EditRole:
                 return self._data.iloc[index.row(), index.column()]
+            elif role == QtCore.Qt.BackgroundRole:
+                if self.table == 'interference':
+                    if self._data['target'].iloc[index.row()]:
+                        return QtGui.QColor(*_red, alpha=32)
 
     def headerData(self, rowcol, orientation, role):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
@@ -433,14 +439,15 @@ class MainWidget(widgets.QWidget):
         self.chargesign = self.chargesign_input.currentText()
         self.mzrange = self.mzrange_input.value()
 
-        data = interference(self.atoms, self.mz, mzrange=self.mzrange, 
-            maxsize=self.maxsize, charge=self.charges, chargesign=self.chargesign, style='plain')
+        data = interference(self.atoms, self.mz, targetrange=self.mzrange,
+            maxsize=self.maxsize, charge=self.charges, chargesign=self.chargesign)
         data.pop('charge')
-        data.columns = ['molecule', 'mass/charge', 'Δmass/charge', 'mz/Δmz (MRP)', 'probability']
+        data.columns = ['molecule', 'mass/charge', 'Δmass/charge', 'mz/Δmz (MRP)', 'probability', 'target']
         data.index = range(1, data.shape[0] + 1)
 
         model = TableModel(data, table='interference')
         self.table_output.setModel(model)
+        self.table_output.setColumnHidden(5, True)
         try:
             # PyQt5
             self.table_output.horizontalHeader().setSectionResizeMode(widgets.QHeaderView.Stretch)
