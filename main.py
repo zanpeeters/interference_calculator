@@ -74,14 +74,26 @@ def interference(atoms, target, targetrange=0.3, maxsize=5, charge=[1],
             target_abun = 1
         except ValueError:
             m = Molecule(target)
+            inferred_charge = False
             if m.chargesign:
                 target_chargesign = m.chargesign
             else:
                 target_chargesign = chargesign
+                inferred_charge = True
             if m.charge:
                 target_charge = m.charge
             else:
                 target_charge = charge[0]
+                inferred_charge = True
+            # If no charge was specified on target,
+            # push the inferred charge back to target
+            if inferred_charge:
+                if target_charge == 0:
+                    target += ' o'
+                elif target_charge == 1:
+                    target += ' {}'.format(target_chargesign)
+                else:
+                    target += ' {}{}'.format(target_charge, target_chargesign)
             target_mz = m.mass
             target_abun = m.abundance
             if m.charge > 0:
