@@ -178,7 +178,7 @@ def interference(atoms, target, targetrange=0.3, maxsize=5, charge=[1],
     return data[['molecule', 'charge', 'mass/charge',
                  'mass/charge diff', 'MRP', 'probability', 'target']]
 
-def standard_ratio(atoms, style='html'):
+def standard_ratio(atoms, style='plain'):
     """ Give the stable isotopes and their standard abundance for the given element(s). """
     data = periodic_table[periodic_table['element'].isin(atoms)].copy()
     data['ratio'] = 1.0
@@ -190,10 +190,11 @@ def standard_ratio(atoms, style='html'):
         data.loc[data['element'] == a, 'ratio'] = ratio
         data.loc[data['element'] == a, 'inverse ratio'] = inv_ratio
 
-    pretty_isotopes = []
-    for i in data['isotope'].values:
-        m = Molecule(i)
-        pretty_isotopes.append(m.formula(style=style, show_charge=False, all_isotopes=True))
-    data['isotope'] = pretty_isotopes
+    if style != 'plain':
+        pretty_isotopes = []
+        for i in data['isotope'].values:
+            m = Molecule(i)
+            pretty_isotopes.append(m.formula(style=style, show_charge=False, all_isotopes=True))
+        data['isotope'] = pretty_isotopes
 
     return data[['isotope', 'mass', 'abundance', 'ratio', 'inverse ratio', 'standard']]

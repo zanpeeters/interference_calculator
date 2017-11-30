@@ -458,7 +458,7 @@ class MainWidget(widgets.QWidget):
         if not self.check_atoms_input():
             return
 
-        data = standard_ratio(self.atoms, style='plain')
+        data = standard_ratio(self.atoms)
         data.index = range(1, data.shape[0] + 1)
 
         model = TableModel(data, table='std_ratios')
