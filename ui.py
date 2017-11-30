@@ -232,7 +232,8 @@ class MainWidget(widgets.QWidget):
         self.standard_ratio_button = widgets.QPushButton('standard ratio', parent=self)
         self.help_button = widgets.QPushButton('?', parent=self)
         self.help_button.setFixedSize(20, 20)
-        self.help_button.setStyleSheet('background-color: #1f77b4; color: white; border-radius: 10;')
+        ss = 'background-color: rgb({},{},{}); color: white; border-radius: 10;'
+        self.help_button.setStyleSheet(ss.format(*_blue))
 
         # Table output
         self.table_output = TableView(html_cols=0)
@@ -251,7 +252,7 @@ class MainWidget(widgets.QWidget):
 
         # Show input errors on statusbar
         self.statusbar = self.parent().statusBar()
-        self.statusbar.setStyleSheet('color: #FF0000;')
+        self.statusbar.setStyleSheet('color: rgb({},{},{});'.format(*_red))
 
         # Layout objects
         pol = widgets.QSizePolicy()
