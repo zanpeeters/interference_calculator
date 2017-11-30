@@ -197,7 +197,7 @@ class MainWidget(widgets.QWidget):
         super().__init__(parent=parent)
         self.atoms = []
         self.charges = [1]
-        self.mz = 0.0
+        self.mz = ''
         self.mzrange = 0.3
         self.maxsize = 5
 
@@ -331,6 +331,10 @@ class MainWidget(widgets.QWidget):
         self.standard_ratio_button.setToolTip(standard_ratio_button_tooltip)
         self.help_button.setToolTip(help_button_tooltip)
 
+    def warn(self, text, time=5000):
+        """ Display a warning message in the status bar. """
+        self.statusbar.showMessage(text, msecs=time)
+
     @QtCore.pyqtSlot()
     def check_atoms_input(self):
         """ Validate input for atoms_input.
@@ -338,13 +342,11 @@ class MainWidget(widgets.QWidget):
         """
         atoms = re.findall(_isotope_rx, self.atoms_input.text())
         if not atoms:
-            msg = 'Enter at least one element or isotope.'
-            self.statusbar.showMessage(msg, msecs=5000)
+            self.warn('Enter at least one element or isotope.')
             return False
         for a in atoms:
             if not (periodic_table['element'] == a).any(): 
-                msg = '{} is not an element or missing from the internal periodic table.'.format(a)
-                self.statusbar.showMessage(msg, msecs=5000)
+                self.warn('{} is not an element or missing from the periodic table.'.format(a))
                 return False
         self.atoms = atoms
         return True
@@ -356,16 +358,14 @@ class MainWidget(widgets.QWidget):
         """
         charges = re.findall(_charges_rx, self.charges_input.text())
         if not charges:
-            msg = 'Enter at least one charge value.'
-            self.statusbar.showMessage(msg, msecs=5000)
+            self.warn('Enter at least one charge value.')
             return False
         icharges = []
         for c in charges:
             try:
                 c = int(c)
             except ValueError:
-                msg = '{} is not a valid charge.'.format(c)
-                self.statusbar.showMessage(msg, msecs=5000)
+                self.warn('{} is not a valid charge.'.format(c))
                 return False
             icharges.append(c)
         self.charges = icharges
@@ -377,22 +377,18 @@ class MainWidget(widgets.QWidget):
             Returns True on correct input, False on error.
         """
         if self.mz_input.text() == '':
-            mz = None
+            self.mz = None
         else:
             try:
-                mz = float(self.mz_input.text())
+                self.mz = float(self.mz_input.text())
             except ValueError:
                 try:
                     m = Molecule(self.mz_input.text())
-                    if m.charge == 0:
-                        mz = m.mass
-                    else:
-                        mz = m.mass/m.charge
                 except:
-                    msg = 'Enter mz as a number or as a molecular formula.'
-                    self.statusbar.showMessage(msg, msecs=5000)
+                    self.warn('Enter target as a number or as a molecular formula.')
                     return False
-        self.mz = mz
+                else:
+                    self.mz = self.mz_input.text()
         return True
 
     def keyPressEvent(self, event):
