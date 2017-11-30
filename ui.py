@@ -336,7 +336,6 @@ class MainWidget(widgets.QWidget):
         """ Display a warning message in the status bar. """
         self.statusbar.showMessage(text, msecs=time)
 
-    @QtCore.pyqtSlot()
     def check_atoms_input(self):
         """ Validate input for atoms_input.
             Returns True on proper validation, False on error.
@@ -352,7 +351,6 @@ class MainWidget(widgets.QWidget):
         self.atoms = atoms
         return True
 
-    @QtCore.pyqtSlot()
     def check_charges_input(self):
         """ Validate input for charges_input.
             Returns True on correct input, False on error.
@@ -372,7 +370,6 @@ class MainWidget(widgets.QWidget):
         self.charges = icharges
         return True
 
-    @QtCore.pyqtSlot()
     def check_mz_input(self):
         """ Validate input for mz_input.
             Returns True on correct input, False on error.
