@@ -463,6 +463,7 @@ class MainWidget(widgets.QWidget):
 
         model = TableModel(data, table='std_ratios')
         self.table_output.setModel(model)
+        self.table_output.setColumnHidden(5, False)
         try:
             # PyQt5
             self.table_output.horizontalHeader().setSectionResizeMode(widgets.QHeaderView.Stretch)
