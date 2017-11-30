@@ -15,6 +15,7 @@ except ImportError:
 
 import sys, re, platform
 import numpy as np
+from pyparsing import ParseException
 from interference_calculator.main import interference, standard_ratio
 from interference_calculator.molecule import Molecule, periodic_table
 from interference_calculator.ui_help import *
@@ -44,8 +45,13 @@ class TableModel(QtCore.QAbstractTableModel):
                 if self.table == 'interference':
                     if index.column() == 0:
                         # formula
-                        m = Molecule(self._data.iloc[index.row(), index.column()])
-                        return m.formula(style='html', all_isotopes=True)
+                        molec = self._data.iloc[index.row(), index.column()]
+                        try:
+                            m = Molecule(molec)
+                        except ParseException:
+                            return molec
+                        else:
+                            return m.formula(style='html', all_isotopes=True)
                     elif index.column() == 1:
                         # mass
                         return '{:.6f}'.format(self._data.iloc[index.row(), index.column()])
