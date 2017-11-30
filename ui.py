@@ -84,9 +84,8 @@ class TableModel(QtCore.QAbstractTableModel):
             elif role == QtCore.Qt.EditRole:
                 return self._data.iloc[index.row(), index.column()]
             elif role == QtCore.Qt.BackgroundRole:
-                if self.table == 'interference':
-                    if self._data['target'].iloc[index.row()]:
-                        return QtGui.QColor(*_red, alpha=32)
+                if self._data['target'].iloc[index.row()]:
+                    return QtGui.QColor(*_red, alpha=32)
 
     def headerData(self, rowcol, orientation, role):
         if orientation == QtCore.Qt.Horizontal and role == QtCore.Qt.DisplayRole:
@@ -456,11 +455,18 @@ class MainWidget(widgets.QWidget):
             return
 
         data = standard_ratio(self.atoms)
+        data['target'] = False
+        if self.check_mz_input() and isinstance(self.mz, str):
+            m = Molecule(self.mz)
+            target_data = standard_ratio(m.elements)
+            target_data['target'] = True
+            data = data.append(target_data)
         data.index = range(1, data.shape[0] + 1)
 
         model = TableModel(data, table='std_ratios')
         self.table_output.setModel(model)
         self.table_output.setColumnHidden(5, False)
+        self.table_output.setColumnHidden(6, True)
         try:
             # PyQt5
             self.table_output.horizontalHeader().setSectionResizeMode(widgets.QHeaderView.Stretch)
