@@ -337,9 +337,9 @@ class Molecule(object):
 
             Only atomic masses of minor isotopes will be given
             in the output; set all_isotopes=True to explicitly
-            give the atomic mass for each isotope. all_isotopes
-            takes precedence over HtoD: 1H and 2H will b used
-            instead of H and D.
+            give the atomic mass for each isotope. HtoD takes
+            precedence over all_isotopes: H and D will be used
+            even if all_isotopes=True, unless HtoD=False.
 
             If style='custom', a custom template can be used to
             format the molecular formula. The template must be
@@ -357,9 +357,6 @@ class Molecule(object):
         elem = self.elements.copy()
         amass = [str(u) for u in self.atomic_masses]
         count = [str(c) if c > 1 else '' for c in self.counts]
-
-        if all_isotopes:
-            HtoD = False
 
         if HtoD:
             for n, (am, el) in enumerate(zip(amass, elem)):
