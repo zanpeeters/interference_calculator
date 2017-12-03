@@ -90,15 +90,15 @@ html_template = {
 }
 
 latex_template = {
-    'begin': '$',
+    'begin': '$\mathrm{',
     'atomic_mass': '{{}}^{{{}}}',
     'element': '{{{}}}',
     'count': '_{{{}}}',
     'charge': '{{}}^{{{}}}',
     'minorjoin': '',
     'majorjoin': '',
-    'minus': '--',
-    'end': '$'
+    'minus': '-',
+    'end': '}$'
 }
 
 mhchem_template = {
