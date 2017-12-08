@@ -201,6 +201,8 @@ class Molecule(object):
         """ Parse input, retrieve elements from periodic table,
             calculate mass and abundance.
         """
+        if not self.input:
+            return
         self.input = self.input.strip()
 
         # Parse input string into pyparsing.ParseResult objects
