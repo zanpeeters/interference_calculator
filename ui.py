@@ -205,7 +205,6 @@ class HTMLDelegate(widgets.QStyledItemDelegate):
 
 class Spectrum(FigureCanvas):
     def __init__(self, data=[], parent=None):
-        
         self.fig = mpl.figure.Figure(figsize=(720/72,600/72), dpi=72)
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
@@ -230,7 +229,7 @@ class Spectrum(FigureCanvas):
         self.ax.set_title('Mass interference spectrum')
         self.ax.minorticks_on()
         self.ax.grid(True)
-        
+
         self.x = self.data['mass/charge'].values
         self.y = self.data['probability'].values
 
