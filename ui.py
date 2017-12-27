@@ -13,9 +13,21 @@ except ImportError:
     except ImportError:
         raise ImportError('You need to have either PyQt4 or PyQt5 installed.')
 
-import sys, re, platform
+try:
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+except ImportError:
+    try:
+        from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+        from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+    except ImportError:
+        raise ImportError('You need to have either the qt5agg or the qt4agg matplotlib backend installed.')
+
+import matplotlib as mpl
 import numpy as np
+import sys, re, platform
 from pyparsing import ParseException
+from itertools import combinations
 from interference_calculator.main import interference, standard_ratio
 from interference_calculator.molecule import Molecule, periodic_table
 from interference_calculator.ui_help import *
@@ -23,8 +35,13 @@ from interference_calculator.ui_help import *
 _isotope_rx = re.compile(r'(\d*[A-Z][a-z]{0,2})')
 _charges_rx = re.compile(r'(\d+)')
 
+# Qt uses 0-255 ints, Matplotlib uses 0-1 floats for RGB
 _red = (193, 24, 78)   #c1184e, fuchsia
 _blue = (31, 119, 180) #1f77b4, blue
+_blueF = [c/255 for c in _blue]
+_redF = [c/255 for c in _red]
+
+mpl.rc('font', family='sans-serif', size=14)
 
 class TableModel(QtCore.QAbstractTableModel):
     """ Take a pandas DataFrame and set data in a QTableModel (read-only). """
@@ -186,6 +203,103 @@ class HTMLDelegate(widgets.QStyledItemDelegate):
         return QtCore.QSize(textbox.idealWidth(), textbox.size().height())
 
 
+class Spectrum(FigureCanvas):
+    def __init__(self, data=[], parent=None):
+        
+        self.fig = mpl.figure.Figure(figsize=(720/72,600/72), dpi=72)
+        FigureCanvas.__init__(self, self.fig)
+        self.setParent(parent)
+
+        self.toolbar = NavigationToolbar(self, self)
+        self.toolbar.resize(self.width(), self.toolbar.height())
+
+        self.data = data
+        self.label_offset = (0, 24)
+        self.minimum = 0
+
+        self.ax = self.fig.add_subplot(111)
+
+        if data:
+            self.plot_spectrum()
+
+    def plot_spectrum(self):
+        """ Plot the spectrum. """
+        self.ax.clear()
+        self.ax.set_xlabel('mass/charge')
+        self.ax.set_ylabel('probability')
+        self.ax.set_title('Mass interference spectrum')
+        self.ax.minorticks_on()
+        self.ax.grid(True)
+        
+        self.x = self.data['mass/charge'].values
+        self.y = self.data['probability'].values
+
+        self.colours = [_redF if c else _blueF for c in self.data['target']]
+
+        self.data_points = self.ax.scatter(self.x, self.y, marker='D', c=self.colours)
+
+        self.data_lines = self.ax.vlines(self.x, [self.minimum] * self.data.shape[0],
+                                    self.y, colors=self.colours, linewidth=3)
+
+        self.renderer = self.fig.canvas.get_renderer()
+
+        self.labels = []
+        for molec, x, y in zip(self.data['molecule'], self.x, self.y):
+            m = Molecule(molec)
+            l = m.formula(all_isotopes=True, style='latex')
+
+            label = self.ax.text(x, y, l, horizontalalignment='center')
+
+            # Set initial offset
+            self.shift_label(label)
+            self.labels.append(label)
+
+        # Iterate over labels until none overlap
+        done = False
+        while not done:
+            done = True
+            for label1, label2 in combinations(self.labels, 2):
+                box1 = label1.get_window_extent(self.renderer)
+                box2 = label2.get_window_extent(self.renderer)
+                if box1.intersection(box1, box2):
+                    self.shift_label(label2)
+                    # There was an overlap, check again.
+                    done = False
+
+        # Draw thin lines from datapoints to labels
+        for label, x, y in zip(self.labels, self.x, self.y):
+            lx, ly = label.get_position()
+            self.ax.plot((x,lx), (y, ly), linewidth=0.5, color='black')
+
+        # For log plot
+        self.minimum = self.data['probability'].min()/100
+        self.ax.autoscale()
+        self.ax.set_ybound(lower=self.minimum)
+
+    def shift_label(self, label, offset=None):
+        """ Shift text label 'label' up by 'offset' amount (in pixels).
+            Label must be a matplotlib.text.Text object. Offset defaults
+            to Spectrum.label_offset.
+        """
+        if not offset:
+            offset = self.label_offset
+
+        xpos, ypos = label.get_position()
+        xpos_px, ypos_px = self.ax.transData.transform((xpos, ypos))
+        xpos_px += offset[0]
+        ypos_px += offset[1]
+        xpos, ypos = self.ax.transData.inverted().transform((xpos_px, ypos_px))
+        label.set_position((xpos, ypos))
+
+
+class SpectrumWindow(widgets.QMainWindow):
+    """ Window for Spectrum widget. """
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.setWindowTitle('Mass interference spectrum')
+        self.setCentralWidget(Spectrum(parent=self))
+
+
 class MainWindow(widgets.QMainWindow):
     """ Main window for interference calculator ui. """
     def __init__(self):
@@ -239,9 +353,14 @@ class MainWidget(widgets.QWidget):
         self.help_button.setFixedSize(20, 20)
         ss = 'background-color: rgb({},{},{}); color: white; border-radius: 10;'
         self.help_button.setStyleSheet(ss.format(*_blue))
+        self.spectrum_button = widgets.QPushButton('▶︎', parent=self)
+        self.spectrum_button.setFixedSize(20,20)
+        ss = 'border: none;'
+        self.spectrum_button.setStyleSheet(ss)
 
-        # Table output
+        # Table and spectrum output
         self.table_output = TableView(html_cols=0)
+        self.spectrum_window = SpectrumWindow(parent=self)
 
         # Qt4 on Mac Snow Leopard and older has a problem with the focus rectangle
         # around input boxes. (error: unlockFocus called too many times)
@@ -293,6 +412,7 @@ class MainWidget(widgets.QWidget):
         self.button_layout.addWidget(self.interference_button)
         self.button_layout.addWidget(self.standard_ratio_button)
         self.button_layout.addWidget(self.help_button)
+        self.button_layout.addWidget(self.spectrum_button)
 
         self.output_layout = widgets.QHBoxLayout()
         self.output_layout.addWidget(self.table_output)
@@ -314,6 +434,7 @@ class MainWidget(widgets.QWidget):
         self.atoms_input.editingFinished.connect(self.check_atoms_input)
         self.charges_input.editingFinished.connect(self.check_charges_input)
         self.mz_input.editingFinished.connect(self.check_mz_input)
+        self.spectrum_button.clicked.connect(self.show_spectrum)
 
         # Set jump order for tab
         self.setTabOrder(self.atoms_input, self.mz_input)
@@ -324,7 +445,8 @@ class MainWidget(widgets.QWidget):
         self.setTabOrder(self.maxsize_input, self.interference_button)
         self.setTabOrder(self.interference_button, self.standard_ratio_button)
         self.setTabOrder(self.standard_ratio_button, self.help_button)
-        self.setTabOrder(self.help_button, self.table_output)
+        self.setTabOrder(self.help_button, self.spectrum_button)
+        self.setTabOrder(self.spectrum_button, self.table_output)
 
         # Set tooltip help
         self.atoms_input.setToolTip(atoms_input_tooltip)
@@ -454,6 +576,10 @@ class MainWidget(widgets.QWidget):
             # PyQt4
             self.table_output.horizontalHeader().setResizeMode(widgets.QHeaderView.Stretch)
 
+        spc = self.spectrum_window.centralWidget()
+        spc.data = data
+        spc.plot_spectrum()
+
     @QtCore.pyqtSlot()
     def show_standard_ratio(self):
         """ Show the standard ratios. """
@@ -491,12 +617,24 @@ class MainWidget(widgets.QWidget):
         text.setMargin(20)
         dialog.exec_()
 
+    @QtCore.pyqtSlot()
+    def show_spectrum(self):
+        """ Show interference data in a spectrum. """
+        if self.spectrum_window.isHidden():
+            self.spectrum_window.show()
+        else:
+            self.spectrum_window.hide()
+
 
 def run():
     """ Run the gui. """
     app = widgets.QApplication([])
-    window = MainWindow()
-    window.show()
+    mainwindow = MainWindow()
+    mainwindow.move(200,100)
+    mainwindow.show()
+    pos = mainwindow.pos()
+    pos.setX(pos.x() + mainwindow.width())
+    mainwindow.centralWidget().spectrum_window.move(pos)
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
