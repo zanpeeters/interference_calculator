@@ -296,6 +296,7 @@ class SpectrumWindow(widgets.QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setWindowTitle('Mass interference spectrum')
+        self.setAttribute(QtCore.Qt.WA_ShowWithoutActivating)
         self.setCentralWidget(Spectrum(parent=self))
 
 
