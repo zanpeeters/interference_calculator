@@ -1,6 +1,6 @@
 # Interference calculator
 
-![interference calculator logo](icon_small_.png)
+![interference calculator logo](icon_small.png)
 
 Interference calculator calculates all molecules that can be formed (the interferences) from a combination of a list of atoms (sample composition), given a target mass and range. The calculation considers all isotopes of the sample atoms and build molecules up to a given size. The results are displayed in a table that can be sorted and copied, as well as a mass spectrum (click button ▶︎ to show).
 
