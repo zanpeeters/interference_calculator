@@ -433,7 +433,7 @@ class MainWidget(widgets.QWidget):
         self.atoms_input.editingFinished.connect(self.check_atoms_input)
         self.charges_input.editingFinished.connect(self.check_charges_input)
         self.mz_input.editingFinished.connect(self.check_mz_input)
-        self.spectrum_button.clicked.connect(self.show_spectrum)
+        self.spectrum_button.clicked.connect(self.toggle_spectrum)
 
         # Set jump order for tab
         self.setTabOrder(self.atoms_input, self.mz_input)
@@ -521,7 +521,8 @@ class MainWidget(widgets.QWidget):
             cmd/ctrl-enter/return to standard ratio,
             cmd/ctrl-c to table data copy,
             cmd/ctrl-a to select all in table,
-            cmd/ctrl-? to open help.
+            cmd/ctrl-h to open help,
+            cmd/ctrl-d to display spectrum.
         """
         key = event.key()
         mod = event.modifiers()
@@ -534,8 +535,10 @@ class MainWidget(widgets.QWidget):
             self.table_output.copy()
         elif (key == QtCore.Qt.Key_A and mod == QtCore.Qt.ControlModifier):
             self.table_output.selectAll()
-        elif (key == QtCore.Qt.Key_Question and mod == QtCore.Qt.ControlModifier):
+        elif (key == QtCore.Qt.Key_H and mod == QtCore.Qt.ControlModifier):
             self.show_help()
+        elif (key == QtCore.Qt.Key_D and mod == QtCore.Qt.ControlModifier):
+            self.toggle_spectrum()
         else:
             super().keyPressEvent(event)
 
@@ -618,7 +621,7 @@ class MainWidget(widgets.QWidget):
         dialog.exec_()
 
     @QtCore.pyqtSlot()
-    def show_spectrum(self):
+    def toggle_spectrum(self):
         """ Show interference data in a spectrum. """
         if self.spectrum_window.isHidden():
             self.spectrum_window.show()

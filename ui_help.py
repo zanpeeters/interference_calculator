@@ -75,15 +75,15 @@ standard_ratio_button_tooltip = '''
 
 help_button_tooltip = '''
 <html><head/><body>
-<p>Help</p>
+<p>Help ({}-H)</p>
 </body></html>
-'''
+'''.format(_modifier)
 
 spectrum_button_tooltip = '''
 <html><head/><body>
-<p>Show the mass spectrum</p>
+<p>Show the mass spectrum ({}-D)</p>
 </body></html>
-'''
+'''.format(_modifier)
 
 mz_warning = '''
 <html><head/><body>
