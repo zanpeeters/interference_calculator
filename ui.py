@@ -274,6 +274,7 @@ class Spectrum(FigureCanvas):
         self.minimum = self.data['probability'].min()/100
         self.ax.autoscale()
         self.ax.set_ybound(lower=self.minimum)
+        self.draw()
 
     def shift_label(self, label, offset=None):
         """ Shift text label 'label' up by 'offset' amount (in pixels).
