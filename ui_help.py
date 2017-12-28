@@ -90,8 +90,8 @@ mz_warning = '''
 
 help_text = '''
 <html><head/><body>
-<h1 align="center"><img src="icon.png" align="left" width="32" height="32" margin="-32"> 
-Interference calculator</h1>
+<img src="icon_small.png" align="left">
+<h1 align="center">Interference calculator</h1>
 <p>This program can calculate possible mass interferences (molecules of similar mass)
 for any molecule based on the composition of a given sample and a target mass. This
 is useful for certain types of mass spectroscopy such as SIMS or ICP-MS.</p>
