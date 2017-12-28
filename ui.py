@@ -609,7 +609,7 @@ class MainWidget(widgets.QWidget):
     def show_help(self):
         """ Display help window. """
         dialog = widgets.QDialog(parent=self)
-        dialog.resize(600,480)
+        dialog.resize(600,620)
         text = widgets.QLabel(parent=dialog)
         text.setText(help_text)
         text.setWordWrap(True)

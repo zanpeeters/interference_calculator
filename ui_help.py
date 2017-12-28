@@ -102,15 +102,20 @@ Weights (CIAAW).
 
 <ul>
 <li>Atomic masses
-    <p><a href=http://ciaaw.org/atomic-masses.htm>http://ciaaw.org/atomic-masses.htm</a>
+    <p><a href=http://ciaaw.org/atomic-masses.htm>http://ciaaw.org/atomic-masses.htm</a></p>
     <p>Wang et al, The Ame2012 atomic mass evaluation, <i>Chinese Physics C</i>, <b>2012</b>, 36, 1603&ndash;2014
      <a href=https://doi.org/10.1088/1674-1137/36/12/003>https://doi.org/10.1088/1674-1137/36/12/003</a></p>
 
 <li>Isotopic abundances
-    <p><a href=https://www.degruyter.com/table/j/pac.2016.88.issue-3/pac-2015-0503/pac-2015-0503.xml?id=j_pac-2015-0503_tab_001>https://www.degruyter.com/table/j/pac.2016.88.issue-3/pac-2015-0503/pac-2015-0503.xml?id=j_pac-2015-0503_tab_001</a><p>
+    <p><a href=https://www.degruyter.com/table/j/pac.2016.88.issue-3/pac-2015-0503/pac-2015-0503.xml?id=j_pac-2015-0503_tab_001>https://www.degruyter.com/table/j/pac.2016.88.issue-3/pac-2015-0503/pac-2015-0503.xml?id=j_pac-2015-0503_tab_001</a></p>
      <p>Meija et al, Isotopic compositions of the elements 2013, <i>Pure and Applied Chemistry</i>, <b>2016</b>, 88, 293&ndash;306 (table 1), <a href=https://doi.org/10.1515/pac-2015-0503>https://doi.org/10.1515/pac-2015-0503</a></p>
-</ul>
 
+<li>Electron mass
+    <p><a href=http://physics.nist.gov/cgi-bin/cuu/Value?me>http://physics.nist.gov/cgi-bin/cuu/Value?me</a></p>
+    <p>Mohr et al, CODATA recommended values of the fundamental physical constants: 2014, <i>arXiv</i>, <b>2015</b>, <a href=https://arxiv.org/pdf/1507.07956.pdf>https://arxiv.org/pdf/1507.07956.pdf</a></p>
+</ul>
+<br/>
+<br/>
 <p align="center"><b>&copy; 2017, Zan Peeters</b></p>
 </body></html>
 '''
