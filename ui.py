@@ -456,6 +456,7 @@ class MainWidget(widgets.QWidget):
         self.maxsize_input.setToolTip(maxsize_input_tooltip)
         self.interference_button.setToolTip(interference_button_tooltip)
         self.standard_ratio_button.setToolTip(standard_ratio_button_tooltip)
+        self.spectrum_button.setToolTip(spectrum_button_tooltip)
         self.help_button.setToolTip(help_button_tooltip)
 
     def warn(self, text, time=5000):

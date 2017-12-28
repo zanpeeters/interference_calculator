@@ -79,6 +79,12 @@ help_button_tooltip = '''
 </body></html>
 '''
 
+spectrum_button_tooltip = '''
+<html><head/><body>
+<p>Show the mass spectrum</p>
+</body></html>
+'''
+
 mz_warning = '''
 <html><head/><body>
 <p>If you do not specify a target, <b>ALL</b> combinations up to
