@@ -320,7 +320,7 @@ class Spectrum(widgets.QWidget):
 class MainWindow(widgets.QMainWindow):
     """ Main window for interference calculator ui. """
     def __init__(self):
-        super().__init__()
+        widgets.QMainWindow.__init__(self)
         self.setWindowTitle('Mass interference calculator')
         self.resize(600, 720)
         self.setMinimumSize(600, 720)
@@ -330,7 +330,7 @@ class MainWindow(widgets.QMainWindow):
 class MainWidget(widgets.QWidget):
     """ Central widget class for interference calculator ui. """
     def __init__(self, parent=None):
-        super().__init__(parent=parent)
+        widgets.QWidget.__init__(self, parent=parent)
         self.atoms = []
         self.charges = [1]
         self.mz = ''
