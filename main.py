@@ -5,8 +5,6 @@ import pandas as pd
 import itertools
 from interference_calculator.molecule import Molecule, mass_electron, periodic_table
 
-__all__ = ['interference', 'standard_ratio']
-
 def interference(atoms, target, targetrange=0.3, maxsize=5, charge=[1],
                  chargesign='-', style='plain'):
     """ For a list of atoms (the composition of the sample),

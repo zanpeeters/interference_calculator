@@ -11,10 +11,6 @@ import pkg_resources
 from numpy import prod
 from scipy.misc import factorial
 
-__all__ = ['Molecule', 'mass_electron', 'periodic_table',
-           'templates', 'html_template', 'latex_template',
-           'mhchem_template', 'isotope_template', 'molecular_template']
-
 _periodic_table_file = pkg_resources.resource_filename(__name__, 'periodic_table.csv')
 periodic_table = pd.read_csv(_periodic_table_file, comment='#')
 
