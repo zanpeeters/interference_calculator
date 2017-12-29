@@ -204,7 +204,7 @@ class HTMLDelegate(widgets.QStyledItemDelegate):
 
 
 class Spectrum(FigureCanvas):
-    def __init__(self, data=[], parent=None):
+    def __init__(self, data=None, parent=None):
         self.fig = mpl.figure.Figure(figsize=(720/72,600/72), dpi=72)
         FigureCanvas.__init__(self, self.fig)
         self.setParent(parent)
@@ -212,26 +212,42 @@ class Spectrum(FigureCanvas):
         self.toolbar = NavigationToolbar(self, self)
         self.toolbar.resize(self.width(), self.toolbar.height())
 
-        self.data = data
+        self._data = None
+        self.x = None
+        self.y = None
         self.label_offset = (0, 24)
         self.minimum = 0
 
+        self.MAX_LABELS = 15
+
         self.ax = self.fig.add_subplot(111)
 
-        if data:
-            self.plot_spectrum()
+        self.plot_spectrum(data)
 
-    def plot_spectrum(self):
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, newdata):
+        self._data = newdata.copy().sort_values('probability', ascending=False)
+        self.x = self._data['mass/charge'].values
+        self.y = self._data['probability'].values
+
+    def plot_spectrum(self, data=None):
         """ Plot the spectrum. """
+        if data is not None:
+            self.data = data
+
+        if self._data is None:
+            return
+
         self.ax.clear()
         self.ax.set_xlabel('mass/charge')
         self.ax.set_ylabel('probability')
         self.ax.set_title('Mass interference spectrum')
         self.ax.minorticks_on()
         self.ax.grid(True)
-
-        self.x = self.data['mass/charge'].values
-        self.y = self.data['probability'].values
 
         self.colours = [_redF if c else _blueF for c in self.data['target']]
 
@@ -243,7 +259,7 @@ class Spectrum(FigureCanvas):
         self.renderer = self.fig.canvas.get_renderer()
 
         self.labels = []
-        for molec, x, y in zip(self.data['molecule'], self.x, self.y):
+        for molec, x, y in zip(self.data['molecule'].iloc[:self.MAX_LABELS], self.x, self.y):
             m = Molecule(molec)
             l = m.formula(all_isotopes=True, style='latex')
 
@@ -581,9 +597,7 @@ class MainWidget(widgets.QWidget):
             # PyQt4
             self.table_output.horizontalHeader().setResizeMode(widgets.QHeaderView.Stretch)
 
-        spc = self.spectrum_window.centralWidget()
-        spc.data = data
-        spc.plot_spectrum()
+        self.spectrum_window.centralWidget().plot_spectrum(data)
 
     @QtCore.pyqtSlot()
     def show_standard_ratio(self):
