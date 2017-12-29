@@ -203,14 +203,23 @@ class HTMLDelegate(widgets.QStyledItemDelegate):
         return QtCore.QSize(textbox.idealWidth(), textbox.size().height())
 
 
-class Spectrum(FigureCanvas):
+class Spectrum(widgets.QWidget):
     def __init__(self, data=None, parent=None):
-        self.fig = mpl.figure.Figure(figsize=(720/72,600/72), dpi=72)
-        FigureCanvas.__init__(self, self.fig)
-        self.setParent(parent)
+        widgets.QWidget.__init__(self, parent=parent)
+        self.setWindowTitle('Mass interference spectrum')
+        self.setWindowFlags(QtCore.Qt.Window)
+        self.setAttribute(QtCore.Qt.WA_ShowWithoutActivating)
 
-        self.toolbar = NavigationToolbar(self, self)
-        self.toolbar.resize(self.width(), self.toolbar.height())
+        self.fig = mpl.figure.Figure(figsize=(720/72,560/72), dpi=72)
+        self.canvas = FigureCanvas(self.fig)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+
+        self.layout = widgets.QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
+        self.layout.addWidget(self.toolbar)
+        self.layout.addWidget(self.canvas)
+        self.setLayout(self.layout)
 
         self._data = None
         self.x = None
@@ -290,7 +299,7 @@ class Spectrum(FigureCanvas):
         self.minimum = self.data['probability'].min()/100
         self.ax.autoscale()
         self.ax.set_ybound(lower=self.minimum)
-        self.draw()
+        self.canvas.draw()
 
     def shift_label(self, label, offset=None):
         """ Shift text label 'label' up by 'offset' amount (in pixels).
@@ -306,15 +315,6 @@ class Spectrum(FigureCanvas):
         ypos_px += offset[1]
         xpos, ypos = self.ax.transData.inverted().transform((xpos_px, ypos_px))
         label.set_position((xpos, ypos))
-
-
-class SpectrumWindow(widgets.QMainWindow):
-    """ Window for Spectrum widget. """
-    def __init__(self, parent=None):
-        super().__init__(parent=parent)
-        self.setWindowTitle('Mass interference spectrum')
-        self.setAttribute(QtCore.Qt.WA_ShowWithoutActivating)
-        self.setCentralWidget(Spectrum(parent=self))
 
 
 class MainWindow(widgets.QMainWindow):
@@ -377,7 +377,7 @@ class MainWidget(widgets.QWidget):
 
         # Table and spectrum output
         self.table_output = TableView(html_cols=0)
-        self.spectrum_window = SpectrumWindow(parent=self)
+        self.spectrum_window = Spectrum(parent=self)
 
         # Qt4 on Mac Snow Leopard and older has a problem with the focus rectangle
         # around input boxes. (error: unlockFocus called too many times)
@@ -597,7 +597,7 @@ class MainWidget(widgets.QWidget):
             # PyQt4
             self.table_output.horizontalHeader().setResizeMode(widgets.QHeaderView.Stretch)
 
-        self.spectrum_window.centralWidget().plot_spectrum(data)
+        self.spectrum_window.plot_spectrum(data)
 
     @QtCore.pyqtSlot()
     def show_standard_ratio(self):
