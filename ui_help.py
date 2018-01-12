@@ -100,7 +100,7 @@ help_text = '''
 <h1 align="center">Interference calculator</h1>
 <p>This program can calculate possible mass interferences (molecules of similar mass)
 for any molecule based on the composition of a given sample and a target mass. This
-is useful for certain types of mass spectroscopy such as SIMS or ICP-MS.</p>
+is useful for certain types of mass spectrometry such as SIMS or ICP-MS.</p>
 
 <p>The atomic data used in this program is taken from the International Union for
 Physical and Applied Chemistry (IUPAC), Commission on Isotopic Abundances and Atomic
