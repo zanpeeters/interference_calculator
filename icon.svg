@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink" 
+     height="512" width="512">
+
+    <!-- filters -->
+    <defs>
+        <filter id="glow">
+            <feGaussianBlur stdDeviation="5" />
+        </filter>
+    </defs>
+
+    <!-- nucleus -->
+    <circle cx="224" cy="224" r="48" fill="white"   stroke="black" stroke-width="2" />
+    <circle cx="224" cy="288" r="48" fill="white"   stroke="black" stroke-width="2" />
+    <circle cx="288" cy="288" r="48" fill="white"   stroke="black" stroke-width="2" />
+    <circle cx="304" cy="256" r="48" fill="white"   stroke="black" stroke-width="2" />
+    <circle cx="208" cy="256" r="48" fill="#de00de" stroke="black" stroke-width="2" />
+    <circle cx="256" cy="304" r="48" fill="#de00de" stroke="black" stroke-width="2" />
+    <circle cx="256" cy="208" r="48" fill="white"   stroke="black" stroke-width="2" />
+    <circle cx="288" cy="224" r="48" fill="#de00de" stroke="black" stroke-width="2" />
+    <circle cx="256" cy="256" r="48" fill="white"   stroke="black" stroke-width="2" />
+
+    <!-- electrons -->
+    <!-- glow -->
+    <ellipse cx="256" cy="256" rx="128" ry="238" fill="none" stroke="#de00de" stroke-width="25"
+        filter="url(#glow)" />
+    <ellipse cx="256" cy="256" rx="128" ry="238" fill="none" stroke="#de00de" stroke-width="25"
+        filter="url(#glow)" transform="rotate(60 256 256)" />
+    <ellipse cx="256" cy="256" rx="128" ry="238" fill="none" stroke="#de00de" stroke-width="25"
+        filter="url(#glow)" transform="rotate(-60 256 256)" />
+
+    <!-- white path -->
+    <ellipse cx="256" cy="256" rx="128" ry="238" fill="none" stroke="white" stroke-width="5" />
+    <ellipse cx="256" cy="256" rx="128" ry="238" fill="none" stroke="white" stroke-width="5"
+        transform="rotate(60 256 256)" />
+    <ellipse cx="256" cy="256" rx="128" ry="238" fill="none" stroke="white" stroke-width="5"
+        transform="rotate(-60 256 256)" />
+</svg>

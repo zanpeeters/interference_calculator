@@ -25,12 +25,13 @@ except ImportError:
 
 import matplotlib as mpl
 import numpy as np
-import sys, re, platform
+import sys, re, platform, pkg_resources
 from pyparsing import ParseException
 from itertools import combinations
 from interference_calculator.main import interference, standard_ratio
 from interference_calculator.molecule import Molecule, periodic_table
 from interference_calculator.ui_help import *
+from interference_calculator import __version__
 
 _isotope_rx = re.compile(r'(\d*[A-Z][a-z]{0,2})')
 _charges_rx = re.compile(r'(\d+)')
@@ -40,6 +41,10 @@ _red = (193, 24, 78)   #c1184e, fuchsia
 _blue = (31, 119, 180) #1f77b4, blue
 _blueF = [c/255 for c in _blue]
 _redF = [c/255 for c in _red]
+
+_icon = pkg_resources.resource_filename(__name__, 'icon.svg')
+_display_button_icon = pkg_resources.resource_filename(__name__, 'display_button_icon.svg')
+_help_button_icon = pkg_resources.resource_filename(__name__, 'help_button_icon.svg')
 
 mpl.rc('font', family='sans-serif', size=14)
 
@@ -366,14 +371,14 @@ class MainWidget(widgets.QWidget):
         # Action button
         self.interference_button = widgets.QPushButton('calculate interference', parent=self)
         self.standard_ratio_button = widgets.QPushButton('standard ratio', parent=self)
-        self.help_button = widgets.QPushButton('?', parent=self)
+        self.help_button = widgets.QPushButton('', parent=self)
+        self.help_button.setIcon(QtGui.QIcon(_help_button_icon))
         self.help_button.setFixedSize(20, 20)
-        ss = 'background-color: rgb({},{},{}); color: white; border-radius: 10;'
-        self.help_button.setStyleSheet(ss.format(*_blue))
-        self.spectrum_button = widgets.QPushButton('▶︎', parent=self)
+        self.help_button.setStyleSheet('border: none;')
+        self.spectrum_button = widgets.QPushButton('', parent=self)
+        self.spectrum_button.setIcon(QtGui.QIcon(_display_button_icon))
         self.spectrum_button.setFixedSize(20,20)
-        ss = 'border: none;'
-        self.spectrum_button.setStyleSheet(ss)
+        self.spectrum_button.setStyleSheet('border: none;')
 
         # Table and spectrum output
         self.table_output = TableView(html_cols=0)
@@ -629,11 +634,11 @@ class MainWidget(widgets.QWidget):
     def show_help(self):
         """ Display help window. """
         dialog = widgets.QDialog(parent=self)
-        dialog.resize(600,620)
+        dialog.resize(600,640)
         text = widgets.QLabel(parent=dialog)
-        text.setText(help_text)
+        text.setText(help_text.format(_icon, __version__))
+        text.setOpenExternalLinks(True)
         text.setWordWrap(True)
-        text.setMargin(20)
         dialog.exec_()
 
     @QtCore.pyqtSlot()
