@@ -352,7 +352,8 @@ class Molecule(object):
             strings are added to the beginning and end of the final
             output string, respectively.
         """
-        elem = self.elements.copy()
+        # Force copy of list without using list.copy (python 2)
+        elem = list(self.elements)
         amass = [str(u) for u in self.atomic_masses]
         count = [str(c) if c > 1 else '' for c in self.counts]
 

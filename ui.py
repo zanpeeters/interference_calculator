@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """ GUI for interference calculator. """
+from __future__ import division
 
 try:
     from PyQt5 import QtCore, QtGui
@@ -25,7 +26,7 @@ except ImportError:
 
 import matplotlib as mpl
 import numpy as np
-import sys, re, platform, pkg_resources
+import sys, re, platform, pkg_resources, six
 from pyparsing import ParseException
 from itertools import combinations
 from interference_calculator.main import interference, standard_ratio
@@ -362,7 +363,7 @@ class MainWidget(widgets.QWidget):
         self.mz_input = widgets.QLineEdit(parent=self)
         self.mz_input.setPlaceholderText('number or formula: 26.0 or 12C 14N')
 
-        self.mzrange_label = widgets.QLabel('±', parent=self)
+        self.mzrange_label = widgets.QLabel(six.u('\u00b1'), parent=self)
         self.mzrange_input = widgets.QDoubleSpinBox(parent=self)
         self.mzrange_input.setValue(self.mzrange)
         self.mzrange_input.setSingleStep(0.1)
@@ -563,7 +564,7 @@ class MainWidget(widgets.QWidget):
         elif (key == QtCore.Qt.Key_D and mod == QtCore.Qt.ControlModifier):
             self.toggle_spectrum()
         else:
-            super().keyPressEvent(event)
+            super(MainWidget, self).keyPressEvent(event)
 
     @QtCore.pyqtSlot()
     def calculate_interference(self):
@@ -589,7 +590,7 @@ class MainWidget(widgets.QWidget):
         data = interference(self.atoms, self.mz, targetrange=self.mzrange,
             maxsize=self.maxsize, charge=self.charges, chargesign=self.chargesign)
         data.pop('charge')
-        data.columns = ['molecule', 'mass/charge', 'Δmass/charge', 'mz/Δmz (MRP)', 'probability', 'target']
+        data.columns = ['molecule', 'mass/charge', six.u('\u0394mass/charge'), six.u('mz/\u0394mz (MRP)'), 'probability', 'target']
         data.index = range(1, data.shape[0] + 1)
 
         model = TableModel(data, table='interference')
