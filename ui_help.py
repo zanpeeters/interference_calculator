@@ -96,18 +96,13 @@ mz_warning = '''
 
 help_text = '''
 <html><head/>
-<body style="margin-top: 20px; margin-left: 20px; margin-right: 20px; margin-bottom: 20px">
-<table>
-    <tr>
-    <td><img src="{}" width="128" height="128"></td>
-    <td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-    <td align="center">
+<body>
+<div style="margin-left: 128px" align="center">
         <h1>Interference calculator</h1>
         <p><strong>version {}</strong></p>
         <p><strong>&copy; 2017, Zan Peeters</strong></p>
-        <p><a href="https://github.com/zanpeeters/interference_calculator">https://github.com/zanpeeters/interference_calculator</a></td>
-    </tr>
-</table>
+        <p><a href="https://github.com/zanpeeters/interference_calculator">https://github.com/zanpeeters/interference_calculator</a>
+</div>
 
 <br/>
 <p>This program can calculate possible mass interferences (molecules of similar mass)

@@ -634,11 +634,18 @@ class MainWidget(widgets.QWidget):
     def show_help(self):
         """ Display help window. """
         dialog = widgets.QDialog(parent=self)
-        dialog.resize(600,640)
+        dialog.resize(600, 640)
+        icon = QtGui.QIcon(_icon)
+        btn = widgets.QPushButton(icon, '', parent=dialog)
+        btn.setStyleSheet('border: none')
+        btn.setFixedSize(128, 128)
+        btn.setIconSize(QtCore.QSize(128, 128))
+        btn.move(20, 20)
         text = widgets.QLabel(parent=dialog)
-        text.setText(help_text.format(_icon, __version__))
+        text.setText(help_text.format(__version__))
         text.setOpenExternalLinks(True)
         text.setWordWrap(True)
+        text.move(20, 20)
         dialog.exec_()
 
     @QtCore.pyqtSlot()
