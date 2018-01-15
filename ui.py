@@ -666,7 +666,7 @@ def run():
     mainwindow.move(200,100)
     mainwindow.show()
     pos = mainwindow.pos()
-    pos.setX(pos.x() + mainwindow.width())
+    pos.setX(pos.x() + mainwindow.frameGeometry().width())
     mainwindow.centralWidget().spectrum_window.move(pos)
     sys.exit(app.exec_())
 
