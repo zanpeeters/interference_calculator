@@ -270,7 +270,7 @@ class Molecule(object):
             (subscripts) calculate relative abundance for entire molecule.
         """
         # multiple isotopes e.g. 28Si (92.2%) 29Si (4.7%) 30Si (3.1%)
-        # In this type of mass spectorscopy we only look at total mass of molecule,
+        # In this type of mass spectrometry we only look at total mass of molecule,
         # not position of isotope. Therefore Si4-29Si has 5 isobaric structures:
         #   Si4-29Si, Si3-29Si-Si, Si2-29Si-Si2, Si-29Si-Si3, 29Si-Si4
         #
