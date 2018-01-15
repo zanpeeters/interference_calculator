@@ -491,7 +491,7 @@ class MainWidget(widgets.QWidget):
         """ Validate input for atoms_input.
             Returns True on proper validation, False on error.
         """
-        atoms = re.findall(_isotope_rx, self.atoms_input.text())
+        atoms = re.findall(_isotope_rx, str(self.atoms_input.text()))
         if not atoms:
             self.warn('Enter at least one element or isotope.')
             return False
@@ -506,7 +506,7 @@ class MainWidget(widgets.QWidget):
         """ Validate input for charges_input.
             Returns True on correct input, False on error.
         """
-        charges = re.findall(_charges_rx, self.charges_input.text())
+        charges = re.findall(_charges_rx, str(self.charges_input.text()))
         if not charges:
             self.warn('Enter at least one charge value.')
             return False
@@ -525,19 +525,20 @@ class MainWidget(widgets.QWidget):
         """ Validate input for mz_input.
             Returns True on correct input, False on error.
         """
-        if self.mz_input.text() == '':
+        mz = str(self.mz_input.text())
+        if mz == '':
             self.mz = None
         else:
             try:
-                self.mz = float(self.mz_input.text())
+                self.mz = float(mz)
             except ValueError:
                 try:
-                    m = Molecule(self.mz_input.text())
+                    m = Molecule(mz)
                 except:
                     self.warn('Enter target as a number or as a molecular formula.')
                     return False
                 else:
-                    self.mz = self.mz_input.text()
+                    self.mz = mz
         return True
 
     def keyPressEvent(self, event):
@@ -584,7 +585,7 @@ class MainWidget(widgets.QWidget):
                 return
 
         self.maxsize = self.maxsize_input.value()
-        self.chargesign = self.chargesign_input.currentText()
+        self.chargesign = str(self.chargesign_input.currentText())
         self.mzrange = self.mzrange_input.value()
 
         data = interference(self.atoms, self.mz, targetrange=self.mzrange,
