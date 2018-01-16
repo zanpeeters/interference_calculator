@@ -346,7 +346,7 @@ class Molecule(object):
             A curly brace pair in the atomic_mass, element, count,
             and charge template strings will be replaced using
             string.format(). The minorjoin string will be used
-            to join all the atomic mass, element, and count
+            to join the atomic mass, element, and count
             into a unit, and the majorjoin string connects all
             the units into the output string. The begin and end
             strings are added to the beginning and end of the final
