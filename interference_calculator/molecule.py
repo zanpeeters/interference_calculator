@@ -70,8 +70,8 @@ _mn_charge = pp.Optional(
             )
 _mn_molecule = _mn_unit('units') + _mn_charge
 
-# Templates for output, add new templates to list.
-templates = ['html_template', 'latex_template', 'mhchem_template', 'isotope_template', 'molecular_template']
+# Just a list of names to choose from, for convenience.
+templates = ['html', 'latex', 'mhchem', 'isotope', 'plain', 'molecular']
 
 html_template = {
     'begin': '',
