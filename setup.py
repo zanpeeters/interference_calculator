@@ -14,7 +14,7 @@ with open(os.path.join('interference_calculator', '__init__.py'), mode='rt', enc
 
 exec('\n'.join(script))
 
-with open('README.md', mode='rt', encoding='utf-8') as fh:
+with open('README.rst', mode='rt', encoding='utf-8') as fh:
     __long_description__ = fh.read()
 
 try:
@@ -45,7 +45,7 @@ setup(
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering'
     ],
-    keywords = 'interference mass spectrometry isotope element standard ratio',
+    keywords = 'interference mass-spectrometry isotope element standard ratio',
 
     install_requires = [
         'matplotlib',
