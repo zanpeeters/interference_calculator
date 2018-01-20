@@ -1,7 +1,7 @@
 .. image:: interference_calculator/icon.svg
     :width: 128px
     :height: 128px
-    :align: left
+    :align: right
     :alt: icon.svg
 
 ***********************
