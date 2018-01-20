@@ -16,7 +16,8 @@ Installation
 ============
 
 To use interference_calculator, first you need to have Python installed. Download Python `here <https://www.python.org>`_. Once Python is installed, open a terminal window (command window on Windows) and type:
-.. codeblock:: shell
+
+.. code-block:: bash
 
     $ pip install interference_calculator
 
@@ -26,7 +27,8 @@ Running
 =======
 
 To start the program, simply run the ui.py script.
-.. codeblock:: shell
+
+.. code-block:: bash
 
     $ python interference_calculator/ui.py
 
