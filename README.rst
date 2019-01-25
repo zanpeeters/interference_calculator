@@ -10,7 +10,15 @@ Interference calculator
 
 Interference calculator calculates all molecules that can be formed (the interferences) from a combination of a list of atoms (sample composition), given a target mass and range. The calculation considers all isotopes of the sample atoms and build molecules up to a given size. The results are displayed in both a table and a mass spectrum.
 
+.. image:: screenshot_1.png
+    :align: center
+    :alt: screenshot-1
+
 The program can also display the standard ratios of the isotopes for any given element. The results include the natural abundance, standard ratio, inverse ratio, and the standard material in which the isotopic ratios where measured.
+
+.. image:: screenshot_2.png
+    :align: center
+    :alt: screenshot-2
 
 Installation
 ============
