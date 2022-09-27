@@ -4,6 +4,8 @@
 import pandas as pd
 import itertools
 from interference_calculator.molecule import Molecule, mass_electron, periodic_table
+"""xmin = 0.0
+xmax = 0.0"""
 
 def interference(atoms, target, targetrange=0.3, maxsize=5, charge=[1],
                  chargesign='-', style='plain'):
@@ -145,10 +147,15 @@ def interference(atoms, target, targetrange=0.3, maxsize=5, charge=[1],
         data = pd.concat(data_w_charge)
 
     if target:
-        data = data.loc[(data['mass/charge'] >= target_mz - targetrange)
-                      & (data['mass/charge'] <= target_mz + targetrange)]
+        data = data.loc[(data['mass/charge'] >= target_mz - round(targetrange*target_mz/2000000,3))
+                      & (data['mass/charge'] <= target_mz + round(targetrange*target_mz/2000000,3))]
         data['mass/charge diff'] = data['mass/charge'] - target_mz
         data['MRP'] = target_mz/data['mass/charge diff'].abs()
+        global xmin
+        xmin = target_mz - round(targetrange*target_mz/2000000,3)
+        global xmax
+        xmax = target_mz + round(targetrange*target_mz/2000000,3)
+
     else:
         data['mass/charge diff'] = 0.0
         data['MRP'] = pd.np.inf
@@ -173,9 +180,12 @@ def interference(atoms, target, targetrange=0.3, maxsize=5, charge=[1],
         'target': True
     }
     data = data.append(target_data, ignore_index=True)
-    return data[['molecule', 'charge', 'mass/charge',
-                 'mass/charge diff', 'MRP', 'probability', 'target']]
+                                                     
+                                                                     
 
+    return data[['molecule', 'charge', 'mass/charge', 'mass/charge diff', 'MRP', 'probability', 'target']]
+def massbound():
+    return xmin, xmax
 def standard_ratio(atoms, style='plain'):
     """ Give the stable isotopes and their standard abundance for the given element(s). """
     data = periodic_table[periodic_table['element'].isin(atoms)].copy()
